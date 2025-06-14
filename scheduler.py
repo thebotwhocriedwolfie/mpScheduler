@@ -203,13 +203,6 @@ def generate_schedule(file_path): #use file path as an argument
     return {
         'schedule': results, #return results
     }
-#testing function 
-file_path = "MP Datasheet.xlsx" 
-schedule_result = generate_schedule(file_path)
-
-# Print the generated schedule
-for entry in schedule_result['schedule']:
-    print(entry)
 
 
 
