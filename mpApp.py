@@ -9,7 +9,7 @@ CORS(app) #enable cors
 
 @app.route('/scheduler.html') #HTML page route
 def serve_scheduler():
-    return send_from_directory("static", "scheduler.html")
+    return send_from_directory("public", "scheduler.html")
 
 @app.route('/generate_schedule', methods=['POST']) #post api route
 def api_generate_schedule(): #call the scheduler
