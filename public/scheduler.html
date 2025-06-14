@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>title</title>
+    <style>
+        #log-box {
+  width: 400px;
+  height: 200px;
+  border: 1px solid #ccc;
+  padding: 10px;
+  overflow: auto; /* Add scrollbars if content overflows */
+  background-color: #f9f9f9;
+}
+
+#log-output {
+  font-family: monospace;
+  white-space: pre-wrap; /* Preserve line breaks and whitespace */
+}
+    </style>
+</head>
+<body>
+    <select id="fileDropdown">
+        <option value="powerappsCSV/2025_APRIL_SEM.xlsx">2025 APRIL SEM</option>
+        <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
+    </select>
+    <button onclick="runScheduler()">schedule</button>
+    <div id="log-box">
+        <p>Logs will appear here:</p>
+        <div id="log-output"></div>
+    </div>
+
+</body>
+<script>
+    function runScheduler(){
+        const selectedFile = document.getElementById("fileDropdown").value;
+
+        fetch("https://mpscheduler.onrender.com/generate_schedule", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ file_path: selectedFile })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("log-output").innerText = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            document.getElementById("log-output").innerText = "Error: " + error.message;
+        });
+    }
+</script>
+</html>
