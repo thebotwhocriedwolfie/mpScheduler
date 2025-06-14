@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from scheduler import generate_schedule  #import function from scheduler.py
 from flask_cors import CORS  #import cors
+from flask import Flask, request, jsonify, send_from_directory
+
 
 app = Flask(__name__)
 CORS(app) #enable cors
