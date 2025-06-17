@@ -2,53 +2,84 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-    <title>title</title>
+    <title>scheduler page</title>
     <style>
-        #log-box {
+        #container {
+  display: flex;
+  justify-content: space-between; /* Places logs, dropdown, and error logs evenly */
+  align-items: flex-start; /* Aligns everything at the top */
+  width: 100%;
+  padding: 20px;
+}
+
+#logBox, #errorLogs {
   width: 400px;
   height: 200px;
   border: 1px solid #ccc;
   padding: 10px;
-  overflow: auto; /* Add scrollbars if content overflows */
+  overflow: auto;
   background-color: #f9f9f9;
 }
 
-#log-output {
-  font-family: monospace;
-  white-space: pre-wrap; /* Preserve line breaks and whitespace */
+#center {
+  display: flex;
+  flex-direction: column; /*stacks dropdown and button */
+  align-items: center; 
+  gap: 10px; 
 }
+
+
     </style>
 </head>
 <body>
-    <select id="fileDropdown">
-        <option value="powerappsCSV/2025_APRIL_SEM.xlsx">2025 APRIL SEM</option>
-        <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
-    </select>
-    <button onclick="runScheduler()">schedule</button>
-    <div id="log-box">
+    <div id="container">
+    <div id="logBox">
         <p>Logs will appear here:</p>
-        <div id="log-output"></div>
+        <div id="logOutput"></div>
     </div>
+
+    <div id="center">
+        <select id="fileDropdown">
+            <option value="powerappsCSV/2025_APRIL_SEM.xlsx">2025 APRIL SEM</option>
+            <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
+        </select>
+        <button onclick="runScheduler()">Schedule</button>
+    </div>
+
+    <div id="errorLogs">
+        <p>Error Logs:</p>
+        <div id="errorLogOutput"></div>
+    </div>
+</div>
+
 
 </body>
 <script>
-    function runScheduler(){
-        const selectedFile = document.getElementById("fileDropdown").value;
+    function runScheduler() {
+    const selectedFile = document.getElementById("fileDropdown").value;
 
-        fetch("https://mpscheduler.onrender.com/generate_schedule", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ file_path: selectedFile })
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("log-output").innerText = JSON.stringify(data, null, 2);
-        })
-        .catch(error => {
-            document.getElementById("log-output").innerText = "Error: " + error.message;
-        });
-    }
+    fetch("https://mpscheduler.onrender.com/generate_schedule", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Display full log
+        document.getElementById("logOutput").innerText = JSON.stringify(data.schedule, null, 2);
+
+        //Filter error messages
+        const errorMessages = data.schedule.filter(entry => entry.startsWith("Error:"));
+
+        //Display only error messages
+        document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
+    })
+    .catch(error => {
+        document.getElementById("logOutput").innerText = "Error: " + error.message;
+        document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
+    });
+}
 </script>
 </html>
