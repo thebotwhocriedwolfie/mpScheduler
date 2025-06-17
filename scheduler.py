@@ -143,7 +143,7 @@ def generate_schedule(file_path): #use file path as an argument
                         (room_df[required_slots] == "free").all(axis=1)
                     ]
                     if available_rooms.empty:
-                        error_messages.add(f"Warning: No available rooms for Subject {subject_id} in Class {class_id}")
+                        error_messages.add(f"No available rooms for Subject {subject_id} in Class {class_id}")
                         continue
                     
                     # Find available teacher
@@ -163,7 +163,7 @@ def generate_schedule(file_path): #use file path as an argument
                             break #break when found
                     
                     if not found_teacher: #error message if no teacher
-                        error_messages.add(f"Warning: No available Teachers for Subject {subject_id} in Class {class_id}")
+                        error_messages.add(f"No available Teachers for Subject {subject_id} in Class {class_id}")
                     
                     if found_teacher:
                         room_id = available_rooms.iloc[0]['RoomID'] #find room
