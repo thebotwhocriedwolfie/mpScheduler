@@ -370,7 +370,7 @@ fetch("https://mpscheduler.onrender.com/counts", {
         headers: {
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({ file_path: selectedFile })
+        const selectedFile = document.getElementById("fileDropdown").value;
     })
         .then(response => response.json())
         .then(data => {
