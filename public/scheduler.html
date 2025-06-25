@@ -359,18 +359,28 @@
 
         // Display only error messages
         document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
-
-        //display counts
-        document.getElementById("teacherCount").textContent = data.counts.teacher_count;
-        document.getElementById("classesCount").textContent = data.counts.classes_count;
-        document.getElementById("roomsCount").textContent = data.counts.rooms_count;
     })
     .catch(error => {
         document.getElementById("logOutput").innerText = "Error: " + error.message;
         document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
     });
 }
-
+fetch("https://mpscheduler.onrender.com/counts", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+        .then(response => response.json())
+        .then(data => {
+            // Display counts
+            document.getElementById("teacherCount").textContent = data.teacher_count;
+            document.getElementById("classesCount").textContent = data.classes_count;
+            document.getElementById("roomsCount").textContent = data.rooms_count;
+        }).catch(error => {
+            console.error("Error fetching counts:", error);
+        });
     </script>
 </body>
 </html>
