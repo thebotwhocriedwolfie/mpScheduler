@@ -79,14 +79,6 @@ def find_spare_rooms(room_df, timeslot_columns, timeslot_df):
 def generate_schedule(file_path): #use file path as an argument
     # Load data
     data = load_data(file_path)
-    
-    
-    # get counts 
-    counts = {
-        'teacher_count': len(data['teacher_df'].index),
-        'classes_count': len(data['class_df'].index),
-        'rooms_count': len(data['room_df'].index)
-    }
 
     # Extract all dataFrames
     class_df = data['class_df']
@@ -296,6 +288,5 @@ def generate_schedule(file_path): #use file path as an argument
 
     return {
         'schedule': results, #return results
-        'spare_rooms': spare_rooms_df,
-        'counts': counts
+        'spare_rooms': spare_rooms_df
     }
