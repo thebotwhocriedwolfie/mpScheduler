@@ -1,13 +1,11 @@
-#function wrapped code with optimisations
-#added spare room optimisation
 import pandas as pd
 from collections import defaultdict
 
-#loading data
+#function to load data
 def load_data(file_path):
     """Load data from Excel file into DataFrames"""
     xls = pd.ExcelFile(file_path)
-    #defining tables
+    
     return {
         'class_df': pd.read_excel(xls, 'Class Table'),
         'teacher_df': pd.read_excel(xls, 'Teacher Table'),
@@ -20,67 +18,15 @@ def load_data(file_path):
     }
 
 def get_day(timeslot):
-    #supporting function to get day from timeslot - since th is a special case
+    #Supporting function to get day from timeslot
     return timeslot[:1] if not timeslot.startswith('th') else 'th'
 
-
-#function to map timeslot id with respective day and timeslot
-def map_timeslot_to_day_time(timeslot, timeslot_df):
-    """Convert timeslot ID to day and formatted time string"""
-    try:
-        slot_info = timeslot_df[timeslot_df['SlotID'] == timeslot].iloc[0]
-        time_obj = slot_info['Time']  # This is a datetime.time object
-        
-        # Convert to 9:00 AM format
-        hour = time_obj.hour
-        minute = time_obj.minute
-        period = "AM" if hour < 12 else "PM"
-        display_hour = hour if hour <= 12 else hour - 12
-        if display_hour == 0:  # Handle midnight
-            display_hour = 12
-        
-        # Add end time 
-        end_hour = (hour + 1) % 24
-        end_period = "AM" if end_hour < 12 else "PM"
-        display_end_hour = end_hour if end_hour <= 12 else end_hour - 12
-        if display_end_hour == 0:
-            display_end_hour = 12
-        
-        # Format output directly in scheduler logic
-        time_str = f"{display_hour}:{minute:02d} {period}-{display_end_hour}:{minute:02d} {end_period}"
-        return slot_info['Day'], time_str
-        
-    except IndexError:
-        print(f"Warning: Timeslot {timeslot} not found")
-        return "Unknown", "Unknown"
-    except Exception as e:
-        print(f"Error processing {timeslot}: {str(e)}")
-        return "Unknown", "Unknown"
-
-# Fetch spare rooms 
-def find_spare_rooms(room_df, timeslot_columns, timeslot_df):
-    """Find all free rooms with proper time mapping"""
-    spare_rooms = []
-    for _, room in room_df.iterrows():
-        for timeslot in timeslot_columns:
-            if room[timeslot] == "free":
-                day, time_range = map_timeslot_to_day_time(timeslot, timeslot_df)
-                spare_rooms.append({
-                    "RoomID": room["RoomID"],
-                    "Day": day,
-                    "Timeslot": time_range,
-                    "FloorBlock": room["FloorBlock"]
-                })
-    return pd.DataFrame(spare_rooms).drop_duplicates()
-    
-
-
-#Main function
-def generate_schedule(file_path): #use file path as an argument
+#Main function to generate the schedule
+def generate_schedule(file_path):
     # Load data
     data = load_data(file_path)
-
-    # Extract all dataFrames
+    
+    # Extract all DataFrames
     class_df = data['class_df']
     teacher_df = data['teacher_df']
     subject_df = data['subject_df']
@@ -88,29 +34,27 @@ def generate_schedule(file_path): #use file path as an argument
     timeslot_df = data['timeslot_df']
     classSubject_df = data['classSubject_df']
     teacherSubject_df = data['teacherSubject_df']
-
-    #Teacher definitions
+    
+    # Teacher definitions
     teacher_hours = {teacher_id: 0 for teacher_id in teacherSubject_df['TeacherId'].unique()}
-
-    # Define timeslot columns in roomdf
+    
+    # Timeslot columns
     timeslot_columns = [col for col in room_df.columns if col.startswith(('m', 't', 'w', 'th', 'f'))]
-
-    #Initialize class and teacher schedules
+    
+    # Initialize class and teacher schedules
     class_schedule = pd.DataFrame(columns=['ClassId'] + timeslot_columns)
     teacher_schedule = pd.DataFrame(columns=['TeacherId'] + timeslot_columns)
-
-    # Defining class schedule - ensures no repeated classes in the same slot
-    for class_id in class_df['ClassId']: 
+    
+    for class_id in class_df['ClassId']:
         row = {'ClassId': class_id}
         row.update({col: 'free' for col in timeslot_columns})
         class_schedule = pd.concat([class_schedule, pd.DataFrame([row])], ignore_index=True)
-
-    # Defining teacher schedule 
-    for teacher_id in teacher_df['TeacherId']:# loop 
+    
+    for teacher_id in teacher_df['TeacherId']:
         row = {'TeacherId': teacher_id}
         row.update({col: 'free' for col in timeslot_columns})
         teacher_schedule = pd.concat([teacher_schedule, pd.DataFrame([row])], ignore_index=True)
-
+    
     # Dictionaries for tracking
     class_subject_room = {}
     daily_subject_hours = defaultdict(int)
@@ -118,55 +62,53 @@ def generate_schedule(file_path): #use file path as an argument
     lunchHour = [str(slot) for slot in timeslot_df['SlotID'] if str(slot).endswith(('4', '5'))]
     class_lunch_time = {}
     
-    #fetch results at the end
-    results = []
-
     # Main scheduling loop
-    for class_id in class_df['ClassId']: #loop through each class - scheduler prioritises class 
+    results = []
+    for class_id in class_df['ClassId']:
         class_subjects = classSubject_df[classSubject_df['ClassId'] == class_id]['SubjectId']
-
-        for subject_id in class_subjects:#subjects for specified class
+        
+        for subject_id in class_subjects:
             error_messages = set()
-
+            
             filtered = subject_df[subject_df['SubjectId'] == subject_id]
-            if filtered.empty: #error handling in case of no subject match
+            if filtered.empty:
                 results.append(f"Error: SubjectId {subject_id} not found in subject_df!")
                 continue
-
+            
             subject_info = filtered.iloc[0]
             required_hours = subject_info['TotalWeeklyHours']
             daily_hours_limit = subject_info['Dailyhours']
             session_duration = daily_hours_limit
             hours_count = 0
-
-            available_teachers = teacherSubject_df[ #checks for teachers who teaches that subject
+            
+            available_teachers = teacherSubject_df[
                 teacherSubject_df['SubjectId'] == subject_id
-            ]['TeacherId'].unique() 
-
-            while hours_count < required_hours: # keep scheduling until reached max subject hours 
+            ]['TeacherId'].unique()
+            
+            while hours_count < required_hours:
                 scheduled_today = False
-
-                for timeslot in timeslot_columns: #loop through timeslots 
+                
+                for timeslot in timeslot_columns:
                     current_day = get_day(timeslot)
-                    day_key = (class_id, subject_id, current_day) # Group as a key to check for repeated lessons on same day
-                   
-                    if daily_subject_hours[day_key] >= daily_hours_limit: #check if subject hours are exceeded in that day
+                    day_key = (class_id, subject_id, current_day)
+                    
+                    if daily_subject_hours[day_key] >= daily_hours_limit:
                         continue
-
+                    
                     remaining_daily_hours = daily_hours_limit - daily_subject_hours[day_key]
                     current_session_duration = min(session_duration, remaining_daily_hours)
-
+                    
                     current_idx = timeslot_columns.index(timeslot)
                     end_idx = current_idx + current_session_duration
                     if end_idx > len(timeslot_columns) or current_day != get_day(timeslot_columns[end_idx - 1]):
                         continue
-
+                    
                     required_slots = timeslot_columns[current_idx:end_idx]
-
+                    
                     # Lunch hour logic
                     if timeslot in lunchHour and class_id not in class_lunch_time:
                         prev_slot = timeslot_columns[timeslot_columns.index(timeslot) - 1] if timeslot_columns.index(timeslot) > 0 else None
-
+                        
                         if class_id in class_lunch_time:
                             if class_lunch_time[class_id] == prev_slot:
                                 pass
@@ -183,7 +125,7 @@ def generate_schedule(file_path): #use file path as an argument
                             elif timeslot[-1] == "5":
                                 class_lunch_time[class_id] = timeslot
                             continue
-
+                    
                     # Check class availability
                     class_free = all(
                         class_schedule.loc[class_schedule['ClassId'] == class_id, slot].iloc[0] == "free"
@@ -191,65 +133,37 @@ def generate_schedule(file_path): #use file path as an argument
                     )
                     if not class_free:
                         continue
-
-                    # Check room availability with spare room functionality
-                    available_rooms = []
-
-                    for _, room in room_df.iterrows():
-                        if all(room[slot] == 'free' for slot in required_slots):
-                            floorblock = room['FloorBlock']
-                            current_day = get_day(timeslot)
-
-                            # Simulate booking this room temporarily
-                            day_slots = [col for col in room_df.columns if get_day(col) == current_day]
-                            simulated = room[day_slots].copy()
-
-                            for slot in required_slots:
-                                simulated[slot] = 'used'
-
-                            # Check if *after* this booking, there's still at least one room in the same floorblock
-                            other_rooms = room_df[(room_df['FloorBlock'] == floorblock) & (room_df['RoomID'] != room['RoomID'])]
-
-                            spare_room_exists = False
-                            for _, other in other_rooms.iterrows():
-                                day_slots_other = [f"{current_day}{s}" for s in ['1', '2', '3', '4', '5']]
-                                room_slots = other[day_slots_other].values.tolist()
-                                for i in range(len(room_slots) - 1):
-                                    if room_slots[i] == 'free' and room_slots[i+1] == 'free':
-                                        spare_room_exists = True
-                                        break
-                                if spare_room_exists:
-                                    break
-
-                            if spare_room_exists:
-                                available_rooms.append(room)
-
-                    if not available_rooms:
+                    
+                    # Check room availability
+                    available_rooms = room_df[
+                        (room_df[required_slots] == "free").all(axis=1)
+                    ]
+                    if available_rooms.empty:
                         error_messages.add(f"Warning: No available rooms for Subject {subject_id} in Class {class_id}")
                         continue
-
+                    
                     # Find available teacher
                     found_teacher = None
                     for teacher_id in available_teachers:
                         if teacher_hours[teacher_id] + current_session_duration > 12:
                             continue
-
+                        
                         teacher_idx = teacher_schedule[teacher_schedule['TeacherId'] == teacher_id].index[0]
                         teacher_free = all(
                             teacher_schedule.at[teacher_idx, slot] == "free"
                             for slot in required_slots
                         )
-
-                        if teacher_free: #loop till a teacher is found
-                            found_teacher = teacher_id #define available teacher as found
-                            break #break when found
-
-                    if not found_teacher: #error message if no teacher
+                        
+                        if teacher_free:
+                            found_teacher = teacher_id
+                            break
+                    
+                    if not found_teacher:
                         error_messages.add(f"Warning: No available Teachers for Subject {subject_id} in Class {class_id}")
-
+                    
                     if found_teacher:
-                        room_id = available_rooms[0]['RoomID'] #find room
-
+                        room_id = available_rooms.iloc[0]['RoomID']
+                        
                         # Update schedules
                         room_df.loc[room_df['RoomID'] == room_id, required_slots] = f"Class {class_id}, Subject {subject_id}"
                         class_schedule.loc[class_schedule['ClassId'] == class_id, required_slots] = f"Subject {subject_id}"
@@ -257,36 +171,38 @@ def generate_schedule(file_path): #use file path as an argument
                             teacher_schedule['TeacherId'] == found_teacher,
                             required_slots
                         ] = f"Class {class_id}, Subject {subject_id}"
-
-                        #Update counters
+                        
+                        # Update counters
                         teacher_hours[found_teacher] += current_session_duration
                         hours_count += current_session_duration
                         daily_subject_hours[day_key] += current_session_duration
                         class_subject_room[(class_id, subject_id)] = room_id
                         
-                        # Convert to DataFrame and save after scheduling
-                        spare_rooms_df = find_spare_rooms(room_df, timeslot_columns, timeslot_df)
-                        spare_rooms_df.to_csv("spare_rooms.csv", index=False)
-
-                        #Add to results
+                        # Add to results
                         message = (
                             f"Booked: Class {class_id}, Subject {subject_id} with Teacher {found_teacher} "
                             f"in Room {room_id} at {timeslot} for {current_session_duration} hours"
-                        )# show this message when scheduled successfully
+                        )
                         print(message)
-                        results.append(message)  # Store for printing later on
+                        results.append(message)  # Store for later printing
                         scheduled_today = True
                         break
-                        
-                if not scheduled_today:# Print specific error messages on why it cant schedule
+                
+                if not scheduled_today:
                     results.append(
                         f"Error: Could not schedule Class {class_id}, Subject {subject_id}. "
                         f"Remaining hours: {required_hours - hours_count}. "
                         f"Reason: {', '.join(error_messages) if error_messages else 'Unknown reason'}"
                     )
                     break
-
+    
     return {
-        'schedule': results, #return results
-        'spare_rooms': spare_rooms_df
+        'schedule': results,
     }
+
+file_path = "MP Datasheet.xlsx" 
+schedule_result = generate_schedule(file_path)
+
+# Print the generated schedule
+for entry in schedule_result['schedule']:
+    print(entry)
