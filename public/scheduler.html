@@ -365,7 +365,7 @@
         document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
     });
 }
-fetch("https://mpscheduler.onrender.com/counts", {
+/*fetch("https://mpscheduler.onrender.com/counts", {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -380,7 +380,26 @@ fetch("https://mpscheduler.onrender.com/counts", {
             document.getElementById("roomsCount").textContent = data.rooms_count;
         }).catch(error => {
             console.error("Error fetching counts:", error);
-        });
+        });*/
+document.addEventListener("DOMContentLoaded", function() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+
+    fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("teacherCount").textContent = data.teacher_count;
+        document.getElementById("classesCount").textContent = data.classes_count;
+        document.getElementById("roomsCount").textContent = data.rooms_count;
+    })
+    .catch(error => {
+        console.error("Error fetching counts:", error);
+    });
+});
     </script>
 </body>
 </html>
