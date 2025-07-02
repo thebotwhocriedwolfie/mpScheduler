@@ -145,7 +145,7 @@ def generate_schedule(file_path):
                     # Find available teacher
                     found_teacher = None
                     for teacher_id in available_teachers:
-                        if teacher_hours[teacher_id] + current_session_duration > 12:
+                        if teacher_hours[teacher_id] + current_session_duration > 20:
                             continue
                         
                         teacher_idx = teacher_schedule[teacher_schedule['TeacherId'] == teacher_id].index[0]
