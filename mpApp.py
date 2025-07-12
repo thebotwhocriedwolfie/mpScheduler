@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from scheduler import generate_schedule  #import function from scheduler.py
+from allocation import run_teacher_assignment #import function from allocation.py
 from flask_cors import CORS  #import cors
 from flask import Flask, request, jsonify, send_from_directory
 import pandas as pd
@@ -22,6 +23,26 @@ def get_counts(file_path):
 @app.route('/scheduler.html') #HTML page route
 def serve_scheduler():
     return send_from_directory("public", "scheduler.html")
+
+@app.route('/assign_teachers', methods=['POST'])
+def api_assign_teachers():
+    data = request.json
+    file_path = data.get('file_path')  # Semester file selected from frontend
+
+    if not file_path:
+        return jsonify({'error': 'No file path provided'}), 400
+
+    try:
+        output_df = run_teacher_assignment(file_path)
+        #return summary: number of teachers used, total allocations
+        summary = {
+            'assignments_count': len(output_df),
+            'unique_teachers': len(output_df['TeacherID'].unique())
+        }
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/generate_schedule', methods=['POST']) #post api route
 def api_generate_schedule(): #call the scheduler
