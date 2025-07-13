@@ -1,3 +1,21 @@
+import pandas as pd
+from collections import defaultdict
+
+#loading data
+def load_data(file_path):
+    """Load data from Excel file into DataFrames"""
+    xls = pd.ExcelFile(file_path)
+    #defining tables
+    return {
+        'class_df': pd.read_excel(xls, 'Class Table'),
+        'teacher_df': pd.read_excel(xls, 'Teacher Table'),
+        'subject_df': pd.read_excel(xls, 'Subject Table'),
+        'room_df': pd.read_excel(xls, 'Room Table'),
+        'timeslot_df': pd.read_excel(xls, 'Timeslot Table'),
+        'booking_df': pd.read_excel(xls, 'Booking Table'),
+        'classSubject_df': pd.read_excel(xls, 'ClassSubject Table'),
+        'teacherSubject_df': pd.read_excel(xls, 'TeacherSubject Table')
+    }
 #optimised teacher allocation 
 def run_teacher_assignment(file_path):
     data = load_data(file_path)
