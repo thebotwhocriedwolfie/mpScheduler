@@ -24,6 +24,10 @@ def get_counts(file_path):
 def serve_scheduler():
     return send_from_directory("public", "scheduler.html")
 
+@app.route('/assign.html') #HTML page route
+def serve_allocation():
+    return send_from_directory("public", "assign.html")
+
 @app.route('/assign_teachers', methods=['POST'])
 def api_assign_teachers():
     data = request.json
