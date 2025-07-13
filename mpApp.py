@@ -41,7 +41,7 @@ def api_assign_teachers():
         #return summary: number of teachers used, total allocations
         summary = {
             'assignments_count': len(output_df),
-            'unique_teachers': len(output_df['TeacherID'].unique())
+            'unique_teachers': len(output_df['TeacherId'].unique())
         }
         return jsonify(summary)
     except Exception as e:
