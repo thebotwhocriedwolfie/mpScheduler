@@ -22,7 +22,7 @@ def get_day(timeslot):
     return timeslot[:1] if not timeslot.startswith('th') else 'th'
 
 #Main function to generate the schedule
-def generate_schedule(file_path, assignment_csv): #use selected dataset and teacher/class allocation csv
+def generate_schedule(file_path, "Allocations.csv"): #use selected dataset and teacher/class allocation csv
     # Load data
     data = load_data(file_path)
     
