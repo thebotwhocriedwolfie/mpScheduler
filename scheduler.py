@@ -206,7 +206,7 @@ def generate_schedule(file_path, assignment_csv): #use selected dataset and teac
 
 #testing function 
 file_path = "2023_APRIL_SEM.xlsx" 
-schedule_result = generate_schedule(file_path,"MP_allocations.csv")
+schedule_result = generate_schedule(file_path,"Allocations.csv")
 
 # Print the generated schedule
 for entry in schedule_result['schedule']:
