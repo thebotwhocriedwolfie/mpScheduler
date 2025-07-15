@@ -67,20 +67,21 @@ def api_assign_teachers():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/generate_schedule', methods=['POST']) #post api route
-def api_generate_schedule(): #call the scheduler
+@app.route('/generate_schedule', methods=['POST'])
+def api_generate_schedule():
     data = request.json
     file_path = data.get('file_path')
+    assignment_csv = data.get('assignment_csv', "Allocations.csv")
 
     if not file_path:
         return jsonify({'error': 'No file path provided'}), 400
 
     try:
-        result = generate_schedule(file_path)
-        return jsonify(result)  # Returns schedule results
-    
+        result = generate_schedule(file_path, assignment_csv)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 #display counts
 @app.route('/counts', methods=['GET'])  # get api route
