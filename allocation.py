@@ -45,10 +45,6 @@ def run_teacher_assignment(file_path):
         # Get eligible teachers and sort them strategically
         eligible_teachers = qualification_df[qualification_df['SubjectId'] == subject_id]['TeacherId'].tolist()
         
-        # Sort teachers by:
-        # 1. Those already teaching this subject (to minimize subject spread)
-        # 2. Those with most remaining capacity (to maximize utilization)
-        # 3. Those teaching fewest subjects (to minimize subject spread)
         eligible_teachers.sort(key=lambda t: (
             -teacher_subject_class_count.get((t, subject_id), 0),  # Already teaching this subject
             - (20 - teacher_load[t]),  # Most remaining capacity
@@ -83,7 +79,7 @@ def run_teacher_assignment(file_path):
 
     # Generate output
     output_df = pd.DataFrame(assignments)
-    output_df.to_csv("MP_allocations.csv", index=False)
+    output_df.to_csv("Allocations.csv", index=False)
     
     # Print some stats
     used_teachers = len(set(output_df['TeacherId']))
