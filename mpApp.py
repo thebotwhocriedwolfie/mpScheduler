@@ -78,7 +78,9 @@ def api_generate_schedule():
 
     try:
         result = generate_schedule(file_path, assignment_csv)
-        return jsonify(result)
+        result_json = result.to_dict(orient='records')  # list of dicts
+        return jsonify({'schedule': result_json})
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
