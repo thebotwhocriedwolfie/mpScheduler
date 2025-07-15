@@ -20,6 +20,25 @@ def get_counts(file_path):
         'rooms_count': len(pd.read_excel(xls, 'Room Table').index)
     }
 
+#get allocation results
+@app.route('/get_allocations', methods=['GET'])
+def get_allocations():
+    file_path = request.args.get('file_path')
+
+    if not file_path:
+        return jsonify({'error': 'No file path provided'}), 400
+
+    try:
+        import os
+        semester_name = os.path.basename(file_path).replace(".xlsx", "")
+        csv_path = "Allocations.csv"
+
+        df = pd.read_csv(csv_path)
+        return df.to_json(orient='records')  # Returns rows as list of objects
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/scheduler.html') #HTML page route
 def serve_scheduler():
     return send_from_directory("public", "scheduler.html")
