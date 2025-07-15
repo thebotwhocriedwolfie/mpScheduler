@@ -198,10 +198,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv"): #use selecte
                     break
     
     return {
-        'schedule': results,
-        'class_schedule': class_schedule,
-        'teacher_schedule': teacher_schedule,
-        'room_schedule': room_df
+        'schedule': results
     }
 
 #testing function 
