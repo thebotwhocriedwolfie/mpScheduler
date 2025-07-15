@@ -77,12 +77,11 @@ def api_generate_schedule():
         return jsonify({'error': 'No file path provided'}), 400
 
     try:
-        result = generate_schedule(file_path, assignment_csv)
-        result_json = result.to_dict(orient='records')  # list of dicts
-        return jsonify({'schedule': result_json})
-
+        result = generate_schedule(file_path, assignment_csv)  # returns a Python dict of logs
+        return jsonify(result)  # this is already JSON-friendly
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 #display counts
