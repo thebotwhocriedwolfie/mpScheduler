@@ -82,6 +82,35 @@ def api_generate_schedule():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+#link files (uploaded on frontend to be accessible in the backend)
+function runFullScheduleFlow() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+
+    fetch('/assign_teachers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+    .then(response => response.json())
+    .then(assignData => {
+        console.log("Teacher assignments:", assignData);
+
+        // Step 2: Generate schedule
+        return fetch('/generate_schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_path: selectedFile })
+        });
+    })
+    .then(response => response.json())
+    .then(scheduleData => {
+        console.log("Schedule generated:", scheduleData);
+        // Update UI with final results
+    })
+    .catch(error => {
+        console.error("Error in full flow:", error);
+    });
+}
 
 
 #display counts
