@@ -3,17 +3,22 @@ from scheduler import generate_schedule  #import function from scheduler.py
 from allocation import run_teacher_assignment #import function from allocation.py
 from flask_cors import CORS  #import cors
 from flask import Flask, request, jsonify, send_from_directory
+from io import BytesIO
 import pandas as pd
 
 app = Flask(__name__)
 CORS(app) #enable cors
 
-#function to get dataset info to display
+
+
 def get_counts(file_path):
-    # Load data from Excel file into DataFrames
-    xls = pd.ExcelFile(file_path)
-    
-    # Load tables and get counts
+    if file_path.startswith("http"):
+        response = requests.get(file_path)
+        response.raise_for_status()
+        xls = pd.ExcelFile(BytesIO(response.content))
+    else:
+        xls = pd.ExcelFile(file_path)
+
     return {
         'teacher_count': len(pd.read_excel(xls, 'Teacher Table').index),
         'classes_count': len(pd.read_excel(xls, 'Class Table').index),
