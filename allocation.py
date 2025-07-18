@@ -1,5 +1,6 @@
 import pandas as pd
 from collections import defaultdict
+from io import BytesIO
 
 #loading data
 def load_data(file_path):
@@ -18,8 +19,13 @@ def load_data(file_path):
     }
 #optimised teacher allocation 
 def run_teacher_assignment(file_path):
-    data = load_data(file_path)
-
+    if file_path.startswith("http"):
+        response = requests.get(file_path)
+        response.raise_for_status()
+        df = pd.read_excel(BytesIO(response.content), sheet_name='Teacher Table')
+    else:
+        df = pd.read_excel(file_path, sheet_name='Teacher Table')
+        
     class_df = data['class_df']
     teacher_df = data['teacher_df']
     subject_df = data['subject_df']
