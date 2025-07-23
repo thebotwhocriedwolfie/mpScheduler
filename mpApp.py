@@ -102,6 +102,29 @@ def api_get_counts():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/upload_from_link', methods=['POST'])
+def upload_from_link():
+    data = request.json
+    file_url = data.get('file_url')  # This should be a OneDrive link ending with ?download=1
+
+    if not file_url or not file_url.startswith("http"):
+        return jsonify({'error': 'Invalid or missing file URL'}), 400
+
+    try:
+        response = requests.get(file_url)
+        response.raise_for_status()
+        xls = pd.ExcelFile(BytesIO(response.content))
+
+        # Example: extract sheet names and return them
+        sheet_names = xls.sheet_names
+        return jsonify({
+            'sheet_names': sheet_names,
+            'message': 'File downloaded and processed successfully'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
