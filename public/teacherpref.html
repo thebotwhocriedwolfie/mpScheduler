@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Preference Form</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(180deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #c41e3a;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(196, 30, 58, 0.1);
+        }
+
+        .day-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .day-option {
+            position: relative;
+        }
+
+        .day-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .day-option label {
+            display: block;
+            padding: 12px;
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            margin-bottom: 0;
+        }
+
+        .day-option label:hover {
+            background: #e8e8e8;
+            border-color: #c41e3a;
+        }
+
+        .day-option input[type="checkbox"]:checked + label {
+            background: #c41e3a;
+            color: white;
+            border-color: #c41e3a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(196, 30, 58, 0.3);
+        }
+
+        .timeslot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .timeslot-option {
+            position: relative;
+        }
+
+        .timeslot-option input[type="checkbox"] {
+            display: none;
+        }
+
+        .timeslot-option label {
+            display: block;
+            padding: 10px;
+            background: #f8f8f8;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            margin-bottom: 0;
+        }
+
+        .timeslot-option label:hover {
+            background: #e8e8e8;
+            border-color: #c41e3a;
+        }
+
+        .timeslot-option input[type="checkbox"]:checked + label {
+            background: #c41e3a;
+            color: white;
+            border-color: #c41e3a;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(196, 30, 58, 0.2);
+        }
+
+        .full-day-option {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .full-day-option input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #c41e3a;
+        }
+
+        .full-day-option label {
+            margin-bottom: 0;
+            font-weight: 500;
+            color: #856404;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(196, 30, 58, 0.4);
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #c41e3a;
+            margin-bottom: 15px;
+            font-weight: 600;
+            border-bottom: 2px solid #c41e3a;
+            padding-bottom: 5px;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .form-container {
+                padding: 25px;
+            }
+
+            .day-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .timeslot-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Teacher Scheduler</h1>
+            <img src="./images/tp.jpeg" width="50" height="50">
+            <p>Temasek Polytechnic - Schedule Management System</p>
+        </div>
+
+        <div class="form-container">
+            <form id="schedulerForm">
+                <div class="form-group">
+                    <label for="teacherId">Teacher ID Number:</label>
+                    <input type="text" id="teacherId" name="teacherId" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="teacherName">Teacher Name:</label>
+                    <input type="text" id="teacherName" name="teacherName" required>
+                </div>
+
+                <div class="form-group">
+                    <div class="section-title">Unavailable Days</div>
+                    <p class="info-text">Select the days you are unavailable for teaching</p>
+                    <div class="day-selector">
+                        <div class="day-option">
+                            <input type="checkbox" id="monday" name="unavailableDays" value="monday">
+                            <label for="monday">Monday</label>
+                        </div>
+                        <div class="day-option">
+                            <input type="checkbox" id="tuesday" name="unavailableDays" value="tuesday">
+                            <label for="tuesday">Tuesday</label>
+                        </div>
+                        <div class="day-option">
+                            <input type="checkbox" id="wednesday" name="unavailableDays" value="wednesday">
+                            <label for="wednesday">Wednesday</label>
+                        </div>
+                        <div class="day-option">
+                            <input type="checkbox" id="thursday" name="unavailableDays" value="thursday">
+                            <label for="thursday">Thursday</label>
+                        </div>
+                        <div class="day-option">
+                            <input type="checkbox" id="friday" name="unavailableDays" value="friday">
+                            <label for="friday">Friday</label>
+                        </div>
+                        <div class="day-option">
+                            <input type="checkbox" id="saturday" name="unavailableDays" value="saturday">
+                            <label for="saturday">Saturday</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="section-title">Unavailable Time Slots</div>
+                    <p class="info-text">Select specific time slots when you are unavailable (9:00 AM - 6:00 PM)</p>
+                    
+                    <div class="full-day-option">
+                        <input type="checkbox" id="fullDay" name="fullDay" value="fullDay">
+                        <label for="fullDay">Unavailable for the entire school day (9:00 AM - 6:00 PM)</label>
+                    </div>
+
+                    <div class="timeslot-grid" id="timeslotGrid">
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot1" name="unavailableSlots" value="09:00-10:00">
+                            <label for="slot1">9:00 - 10:00 AM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot2" name="unavailableSlots" value="10:00-11:00">
+                            <label for="slot2">10:00 - 11:00 AM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot3" name="unavailableSlots" value="11:00-12:00">
+                            <label for="slot3">11:00 AM - 12:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot4" name="unavailableSlots" value="12:00-13:00">
+                            <label for="slot4">12:00 - 1:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot5" name="unavailableSlots" value="13:00-14:00">
+                            <label for="slot5">1:00 - 2:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot6" name="unavailableSlots" value="14:00-15:00">
+                            <label for="slot6">2:00 - 3:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot7" name="unavailableSlots" value="15:00-16:00">
+                            <label for="slot7">3:00 - 4:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot8" name="unavailableSlots" value="16:00-17:00">
+                            <label for="slot8">4:00 - 5:00 PM</label>
+                        </div>
+                        <div class="timeslot-option">
+                            <input type="checkbox" id="slot9" name="unavailableSlots" value="17:00-18:00">
+                            <label for="slot9">5:00 - 6:00 PM</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Submit Schedule</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const fullDayCheckbox = document.getElementById('fullDay');
+        const timeslotGrid = document.getElementById('timeslotGrid');
+        const timeslotCheckboxes = document.querySelectorAll('input[name="unavailableSlots"]');
+
+        // Handle full day checkbox
+        fullDayCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                timeslotGrid.style.opacity = '0.3';
+                timeslotGrid.style.pointerEvents = 'none';
+                timeslotCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                    checkbox.disabled = true;
+                });
+            } else {
+                timeslotGrid.style.opacity = '1';
+                timeslotGrid.style.pointerEvents = 'auto';
+                timeslotCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.disabled = false;
+                });
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('schedulerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                teacherId: formData.get('teacherId'),
+                teacherName: formData.get('teacherName'),
+                unavailableDays: formData.getAll('unavailableDays'),
+                unavailableSlots: formData.getAll('unavailableSlots'),
+                fullDay: formData.get('fullDay') === 'fullDay'
+            };
+
+            // Show confirmation
+            alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
+            
+            // You can process the data here or send it to a server
+            console.log('Form data:', data);
+        });
+
+        // Add smooth hover effects
+        document.querySelectorAll('.day-option label, .timeslot-option label').forEach(label => {
+            label.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            label.addEventListener('mouseleave', function() {
+                if (!this.previousElementSibling.checked) {
+                    this.style.transform = 'translateY(0)';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+    

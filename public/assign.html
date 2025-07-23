@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Allocations</title>
+    <style>
+         .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #c41e3a;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-card h3 {
+            color: #c41e3a;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .count {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Progress Card */
+        .progress-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #c41e3a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#c41e3a 0deg 216deg, #e9ecef 216deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .progress-circle::before {
+            content: '';
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .progress-text {
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            color: #c41e3a;
+        }
+
+        .progress-label {
+            color: #c41e3a;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+    </style>
+    </head>
+    <body>
+        <div class="header">
+        <img src="images\tp.jpeg" width="100" height="80" >
+        <h1>Teacher Assigner</h1>
+    </div>
+
+    <div class="main-container">
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <h3>Teachers</h3>
+                <div class="count" id="teacherCount">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Classes</h3>
+                <div class="count" id="classesCount">0</div>
+            </div>
+            <div class="progress-card">
+                <div class="progress-circle">
+                    <div class="progress-text">60%</div>
+                </div>
+                <div class="progress-label">Scheduler Score</div>
+            </div>
+        </div>
+        <div>
+        <label for="fileDropdown">Select Dataset</label>
+                    <select id="fileDropdown" onchange="updateCounts()">
+                        <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
+                        <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
+                        <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
+                    </select>
+                    <!-- Upload public link -->
+<div style="margin-top: 1em;">
+    <label for="linkInput">Add Public Dataset Link</label><br>
+    <input type="text" id="linkInput" placeholder="Paste OneDrive/SharePoint link" style="width: 60%;" />
+    <input type="text" id="nameInput" placeholder="Dataset name" style="width: 30%;" />
+    <button onclick="addToDropdown()">Add</button>
+</div>
+                    <h4>Allocate Teachers To Class</h4>
+                    <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
+                    </div>
+        <div>
+            <h4>View Teacher Assignments</h4>
+            <button onclick="viewAssignments()">View Assignments</button>
+            <pre id="assignmentOutput"></pre>
+        </div>
+    <script>
+    function run_allocation() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+        console.log("Sending file to backend:", selectedFile);
+
+        fetch("https://mpscheduler.onrender.com/assign_teachers", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ file_path: selectedFile })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert("Assignment complete! Allocations generated!");
+            console.log(data);
+        })
+        .catch(error => {
+            alert("Assignment failed.");
+            console.error("Error:", error);
+        });
+    }
+
+    function viewAssignments() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+
+        fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
+            method: "GET"
+        })
+        .then(response => response.json())
+        .then(data => {
+            const formatted = data.map(row => 
+                `Class: ${row.ClassId}, Subject: ${row.SubjectId}, Teacher: ${row.TeacherId}`
+            ).join('\n');
+            document.getElementById("assignmentOutput").textContent = formatted;
+        })
+        .catch(err => console.error("Error loading assignments:", err));
+    }
+
+    function updateCounts() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+
+        fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("teacherCount").textContent = data.teacher_count;
+            document.getElementById("classesCount").textContent = data.classes_count;
+        })
+        .catch(error => {
+            console.error("Error fetching counts:", error);
+        });
+    }
+
+function addToDropdown() {
+    let link = document.getElementById("linkInput").value.trim();
+    const name = document.getElementById("nameInput").value.trim();
+    const dropdown = document.getElementById("fileDropdown");
+
+    if (!link || !name) {
+        alert("Please enter both a link and a name.");
+        return;
+    }
+
+    // Automatically append ?download=1 if needed
+    if (!link.includes('?download=1')) {
+        // Clean off trailing parameters before appending
+        link = link.split('?')[0] + '?download=1';
+    }
+
+    const option = document.createElement("option");
+    option.value = link;
+    option.textContent = name;
+    dropdown.appendChild(option);
+
+    dropdown.value = link;
+    dropdown.dispatchEvent(new Event('change'));
+
+    document.getElementById("linkInput").value = '';
+    document.getElementById("nameInput").value = '';
+}
+
+
+
+
+
+
+</script>
+
+    </body>
+    </html>
