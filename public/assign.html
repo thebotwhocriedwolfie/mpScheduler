@@ -199,12 +199,6 @@ function addToDropdown() {
         return;
     }
 
-    // Automatically append ?download=1 if needed
-    if (!link.includes('?download=1')) {
-        // Clean off trailing parameters before appending
-        link = link.split('?')[0] + '?download=1';
-    }
-
     const option = document.createElement("option");
     option.value = link;
     option.textContent = name;
