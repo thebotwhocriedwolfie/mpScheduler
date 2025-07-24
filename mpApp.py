@@ -6,10 +6,29 @@ from flask import Flask, request, jsonify, send_from_directory
 from io import BytesIO
 import pandas as pd
 import requests
+import os
 
 
 app = Flask(__name__)
 CORS(app) #enable cors
+
+folder_path = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
+
+
+@app.route('/list_files', methods=['GET'])
+def list_local_files():
+    folder_path = r"C:\Users\kiirti\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
+    
+    try:
+        files = [
+            f for f in os.listdir(folder_path)
+            if f.endswith('.xlsx')
+        ]
+        return jsonify({'files': files})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 
 
 
