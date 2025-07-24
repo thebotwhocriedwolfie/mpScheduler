@@ -211,9 +211,26 @@ function addToDropdown() {
     document.getElementById("nameInput").value = '';
 }
 
+function populateDropdown() {
+    const dropdown = document.getElementById("fileDropdown");
+    dropdown.innerHTML = "";  // Clear previous options
 
-
-
+    // 🔹 Load from Flask: local .xlsx files
+    fetch("http://localhost:5000/list_files")
+        .then(res => res.json())
+        .then(data => {
+            data.files.forEach(file => {
+                const option = document.createElement("option");
+                option.value = `C:\\Users\\kiirti\\OneDrive - Temasek Polytechnic\\MP_Shared_Files\\powerappsCSV\\${file}`;
+                option.textContent = file;
+                dropdown.appendChild(option);
+            });
+        })
+        .catch(err => {
+            console.error("Error loading local files:", err);
+        });
+}
+ window.addEventListener('DOMContentLoaded', populateDropdown)
 
 
 </script>
