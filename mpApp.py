@@ -17,7 +17,7 @@ folder_path = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\po
 
 @app.route('/list_files', methods=['GET'])
 def list_local_files():
-    folder_path = r"C:\Users\kiirti\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
+    folder_path = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
     
     try:
         files = [
