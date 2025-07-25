@@ -211,26 +211,61 @@ function addToDropdown() {
     document.getElementById("nameInput").value = '';
 }
 
-function populateDropdown() {
+async function populateDropdown() {
     const dropdown = document.getElementById("fileDropdown");
-    dropdown.innerHTML = "";  // Clear previous options
+    
+    // Always keep these default options
+    const defaultOptions = [
+        {value: "2023_APRIL_SEM.xlsx", text: "2023 APRIL SEM"},
+        {value: "2023_2024_OCT_SEM.xlsx", text: "2023-2024 OCT SEM"},
+        {value: "2025-2026_OCT_SEM.xlsx", text: "2025-2026 OCT SEM"}
+    ];
+    
+    // Clear and repopulate
+    dropdown.innerHTML = "";
+    defaultOptions.forEach(opt => {
+        const option = new Option(opt.text, opt.value);
+        dropdown.add(option);
+    });
 
-    // 🔹 Load from Flask: local .xlsx files
+    // Load dynamic files
+    try {
+        const response = await fetch("http://localhost:5000/list_files");
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        console.log("Server response:", data);  // Debugging
+        
+        if (data.status === "success") {
+            data.files.forEach(file => {
+                // Only add if not already in default options
+                if (!defaultOptions.some(opt => opt.value === file)) {
+                    const option = new Option(file.replace('.xlsx', ''), file);
+                    dropdown.add(option);
+                }
+            });
+        } else {
+            console.error("Server error:", data.error);
+        }
+    } catch (error) {
+        console.error("Failed to load files:", error);
+        // Optionally show a user-friendly message
+        const option = new Option("Could not load additional files", "");
+        option.disabled = true;
+        dropdown.add(option);
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    populateDropdown();
+    
+    // For debugging - verify the path is correct
     fetch("http://localhost:5000/list_files")
         .then(res => res.json())
-        .then(data => {
-            data.files.forEach(file => {
-                const option = document.createElement("option");
-                option.value = `C:\\Users\\kiirti\\OneDrive - Temasek Polytechnic\\MP_Shared_Files\\powerappsCSV\\${file}`;
-                option.textContent = file;
-                dropdown.appendChild(option);
-            });
-        })
-        .catch(err => {
-            console.error("Error loading local files:", err);
-        });
-}
- window.addEventListener('DOMContentLoaded', populateDropdown)
+        .then(data => console.log("Current working folder:", data.folder))
+        .catch(console.error);
+});
 
 
 </script>
