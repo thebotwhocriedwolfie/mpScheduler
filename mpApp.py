@@ -12,22 +12,25 @@ import os
 app = Flask(__name__)
 CORS(app) #enable cors
 
-folder_path = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
+# One Drive Sycnced Folder Path
+ONE_DRIVE_FOLDER = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
 
-
+# Then modify your list_files endpoint like this:
 @app.route('/list_files', methods=['GET'])
 def list_local_files():
-    folder_path = r"C:\Users\kiirt\OneDrive - Temasek Polytechnic\MP_Shared_Files\powerappsCSV"
-    
     try:
-        files = [
-            f for f in os.listdir(folder_path)
-            if f.endswith('.xlsx')
-        ]
-        return jsonify({'files': files})
+        files = [f for f in os.listdir(ONE_DRIVE_FOLDER) if f.lower().endswith('.xlsx')]
+        return jsonify({
+            'status': 'success',
+            'files': files,
+            'folder': ONE_DRIVE_FOLDER  # For debugging
+        })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'folder': ONE_DRIVE_FOLDER  # To verify the path is correct
+        }), 500
 
 
 
