@@ -22,6 +22,12 @@ def save_preferences():
         # Read existing data
         with open("public",'preferences.json', 'r') as f:
             existing_data = json.load(f)
+
+        print("🩺 Saving teacher preferences:")
+        print("Full payload:", data)
+        print("Type of unavailable_slots:", type(data.get("unavailableSlots")))
+        print("Value of unavailable_slots:", data.get("unavailableSlots"))
+
         
         # Add new data
         existing_data.append(data)
