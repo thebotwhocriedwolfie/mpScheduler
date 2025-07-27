@@ -205,25 +205,6 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     )
                     print(message)
                     results.append(message)
-
-                    # Final metrics
-                    preference_score = 0
-                    if total_attempts > 0:
-                        preference_score = 100 - ((preference_violations / total_attempts) * 100)
-                        
-                    metrics = {
-                        'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
-                        'preference_score': f"{preference_score:.2f}%",
-                        'total_attempts': total_attempts,
-                        'preference_violations': preference_violations,
-                        'lunch_hours_assigned': len(class_lunch_time)
-                    }
-                    # Print metrics to console (for immediate visibility)
-                    print("\n=== SCHEDULING METRICS ===")
-                    print(f"Rooms Utilized: {metrics['rooms_utilized']}")
-                    print(f"Preference Score: {metrics['preference_score']} (violations: {metrics['preference_violations']}/{metrics['total_attempts']})")
-                    print(f"Lunch Hours Assigned: {metrics['lunch_hours_assigned']}")
-                    scheduled_today = True
                     break
 
                 if not scheduled_today:
@@ -233,11 +214,26 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                         f"Reason: {', '.join(error_messages) if error_messages else 'Unknown reason'}"
                     )
                     break
+                    
+                    # Metrics once scheduling is completed 
+                    preference_score = 100 - (preference_violations / total_attempts * 100) if total_attempts > 0 else 0
 
-    return {
-        'schedule': results,
-        'metrics':metrics
-    }
+                    print("\n=== SCHEDULING SUMMARY ===")
+                    print(f"• Rooms Used: {len(used_rooms)}/{total_rooms}")
+                    print(f"• Teacher Preferences Honored: {preference_score:.1f}% ({total_attempts - preference_violations}/{total_attempts} slots)")
+                    print(f"• Total Assignments Made: {len(results) - len([r for r in results if 'Error' in r])}")
+                    
+                    return {
+                        'schedule': results,
+                        'metrics': {
+                            'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
+                            'preference_score': f"{preference_score:.1f}%",
+                            'successful_assignments': len(results) - len([r for r in results if 'Error' in r]),
+                            'failed_assignments': len([r for r in results if 'Error' in r])
+                        }
+                    
+
+    
 
 
 #testing function 
