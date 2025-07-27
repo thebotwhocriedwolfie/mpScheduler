@@ -231,6 +231,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                             'successful_assignments': len(results) - len([r for r in results if 'Error' in r]),
                             'failed_assignments': len([r for r in results if 'Error' in r])
                         }
+                    }
                     
 
     
