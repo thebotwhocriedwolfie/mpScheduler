@@ -462,6 +462,7 @@ document.getElementById('schedulerForm').addEventListener('submit', function(e) 
         unavailableSlots: finalSlots,
         fullDay: formData.has('fullDay')  
     };
+    console.log("Sending payload:", JSON.stringify(data));
 
     alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
 
