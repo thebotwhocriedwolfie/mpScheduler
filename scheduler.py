@@ -25,7 +25,8 @@ def get_day(timeslot):
 def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=None):
 
     if teacher_prefs is None:
-    teacher_prefs = {}  
+        teacher_prefs = {}  
+        
     # Load data
     data = load_data(file_path)
 
