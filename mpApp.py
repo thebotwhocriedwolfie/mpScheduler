@@ -12,6 +12,30 @@ import os
 app = Flask(__name__)
 CORS(app) #enable cors
 
+#save teacher preferences in json file (preferences.json)
+@app.route('/save_preferences', methods=['POST'])
+def save_preferences():
+    try:
+        # Get the JSON data from the request
+        data = request.json
+        
+        # Read existing data
+        with open('preferences.json', 'r') as f:
+            existing_data = json.load(f)
+        
+        # Add new data
+        existing_data.append(data)
+        
+        # Write back to file
+        with open('preferences.json', 'w') as f:
+            json.dump(existing_data, f, indent=2)
+        
+        return jsonify({"status": "success", "message": "Preferences saved"})
+    
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 
 
 def get_counts(file_path):
