@@ -120,6 +120,11 @@ def api_generate_schedule():
                 preferences = json.load(f)
         
         result = generate_schedule(file_path, assignment_csv, preferences)
+        
+        #Print each entry for debug
+        for entry in result['schedule']:
+            print(entry)
+
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
