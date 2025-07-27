@@ -205,6 +205,12 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     )
                     print(message)
                     results.append(message)
+
+                    # Final metrics
+                    preference_score = 0
+                    if total_attempts > 0:
+                        preference_score = 100 - ((preference_violations / total_attempts) * 100)
+                        
                     metrics = {
                         'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
                         'preference_score': f"{preference_score:.2f}%",
@@ -227,11 +233,6 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                         f"Reason: {', '.join(error_messages) if error_messages else 'Unknown reason'}"
                     )
                     break
-
-    # Final metrics
-    preference_score = 0
-    if total_attempts > 0:
-        preference_score = 100 - ((preference_violations / total_attempts) * 100)
 
     return {
         'schedule': results,
