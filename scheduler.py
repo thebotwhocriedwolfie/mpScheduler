@@ -205,7 +205,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     )
                     print(message)
                     results.append(message)
-                    'metrics'= {
+                    metrics = {
                         'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
                         'preference_score': f"{preference_score:.2f}%",
                         'total_attempts': total_attempts,
