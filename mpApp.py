@@ -85,9 +85,9 @@ def serve_scheduler():
 def serve_allocation():
     return send_from_directory("public", "assign.html")
 
-@app.route('/teacher_pref.html') #HTML page route
+@app.route('/teacherpref.html') #HTML page route
 def preference_form():
-    return send_from_directory("public", "teacher_pref.html")
+    return send_from_directory("public", "teacherpref.html")
 
 @app.route('/assign_teachers', methods=['POST'])
 def api_assign_teachers():
