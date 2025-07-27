@@ -460,7 +460,7 @@ document.getElementById('schedulerForm').addEventListener('submit', function(e) 
         teacherName: formData.get('teacherName'),
         unavailableDays: selectedDays,
         unavailableSlots: finalSlots,
-        fullDay: formData.get('fullDay') === 'on'  
+        fullDay: formData.has('fullDay')  
     };
 
     alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
