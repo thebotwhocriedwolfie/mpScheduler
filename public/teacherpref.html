@@ -389,6 +389,31 @@
     </div>
 
     <script>
+function changeTimeslotToCode(day, time) {
+    const dayToCode = {
+        "Monday": "M",
+        "Tuesday": "T",
+        "Wednesday": "W",
+        "Thursday": "R",
+        "Friday": "F"
+    };
+
+    const timeslotToCode = {
+        "09:00-10:00": "1",
+        "10:00-11:00": "2",
+        "11:00-12:00": "3",
+        "12:00-13:00": "4",
+        "13:00-14:00": "5",
+        "14:00-15:00": "6",
+        "15:00-16:00": "7",
+        "16:00-17:00": "8"
+    };
+
+    const dayCode = dayToCode[day];
+    const timeCode = timeslotToCode[time];
+    return dayCode + timeCode;  // e.g. "M1" for Monday 9–10
+}
+
         const fullDayCheckbox = document.getElementById('fullDay');
         const timeslotGrid = document.getElementById('timeslotGrid');
         const timeslotCheckboxes = document.querySelectorAll('input[name="unavailableSlots"]');
@@ -412,25 +437,52 @@
             }
         });
 
-        // Handle form submission
-        document.getElementById('schedulerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const data = {
-                teacherId: formData.get('teacherId'),
-                teacherName: formData.get('teacherName'),
-                unavailableDays: formData.getAll('unavailableDays'),
-                unavailableSlots: formData.getAll('unavailableSlots'),
-                fullDay: formData.get('fullDay') === 'fullDay'
-            };
+// Handle form submission
+document.getElementById('schedulerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const selectedDays = formData.getAll('unavailableDays');
+    const selectedSlots = formData.getAll('unavailableSlots');
+    const finalSlots = [];
 
-            // Show confirmation
-            alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
-            
-            // You can process the data here or send it to a server
-            console.log('Form data:', data);
+    selectedDays.forEach(day => {
+        selectedSlots.forEach(slot => {
+            finalSlots.push(changeTimeslotToCode(capitalize(day), slot)); 
         });
+    });
+
+    const data = {
+        teacherId: formData.get('teacherId'),
+        teacherName: formData.get('teacherName'),
+        unavailableDays: selectedDays,
+        unavailableSlots: finalSlots,
+        fullDay: formData.get('fullDay') === 'on'  
+    };
+
+    alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
+
+    fetch('https://mpscheduler.onrender.com/save_preferences', {  
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('Success:', result);
+        if (result.status === 'success') {
+            alert('Success Saving Preferences')
+        } else {
+            alert('Error saving preferences: ' + result.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to save preferences. Please try again.');
+    });
+});
 
         // Add smooth hover effects
         document.querySelectorAll('.day-option label, .timeslot-option label').forEach(label => {
