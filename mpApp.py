@@ -98,22 +98,27 @@ def api_assign_teachers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+#generate schedule api 
 @app.route('/generate_schedule', methods=['POST'])
 def api_generate_schedule():
     data = request.json
     file_path = data.get('file_path')
     assignment_csv = data.get('assignment_csv', "Allocations.csv")
-
+    
     if not file_path:
         return jsonify({'error': 'No file path provided'}), 400
 
     try:
-        result = generate_schedule(file_path, assignment_csv)  # returns a Python dict of logs
-        return jsonify(result)  # this is already JSON-friendly
+        # Load preferences if available
+        preferences = []
+        if os.path.exists('preferences.json'):
+            with open('preferences.json', 'r') as f:
+                preferences = json.load(f)
+        
+        result = generate_schedule(file_path, assignment_csv, preferences)
+        return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 #display counts
 @app.route('/counts', methods=['GET'])  # get api route
