@@ -233,11 +233,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                         }
                     }
 
-schedule_result = generate_schedule()
 
-# Print the generated schedule
-for entry in schedule_result['schedule']:
-    print(entry)
                     
 
 
