@@ -205,6 +205,18 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     )
                     print(message)
                     results.append(message)
+                    'metrics'= {
+                        'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
+                        'preference_score': f"{preference_score:.2f}%",
+                        'total_attempts': total_attempts,
+                        'preference_violations': preference_violations,
+                        'lunch_hours_assigned': len(class_lunch_time)
+                    }
+                    # Print metrics to console (for immediate visibility)
+                    print("\n=== SCHEDULING METRICS ===")
+                    print(f"Rooms Utilized: {metrics['rooms_utilized']}")
+                    print(f"Preference Score: {metrics['preference_score']} (violations: {metrics['preference_violations']}/{metrics['total_attempts']})")
+                    print(f"Lunch Hours Assigned: {metrics['lunch_hours_assigned']}")
                     scheduled_today = True
                     break
 
@@ -223,13 +235,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
 
     return {
         'schedule': results,
-        'metrics': {
-            'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
-            'preference_score': f"{preference_score:.2f}%",
-            'total_attempts': total_attempts,
-            'preference_violations': preference_violations,
-            'lunch_hours_assigned': len(class_lunch_time)
-        }
+        'metrics':metrics
     }
 
 
