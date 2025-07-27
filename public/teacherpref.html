@@ -483,6 +483,9 @@ document.getElementById('schedulerForm').addEventListener('submit', function(e) 
         alert('Failed to save preferences. Please try again.');
     });
 });
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
 
         // Add smooth hover effects
         document.querySelectorAll('.day-option label, .timeslot-option label').forEach(label => {
