@@ -14,37 +14,48 @@ import json
 app = Flask(__name__)
 CORS(app) #enable cors
 
+from flask import Flask, request, jsonify
+import os
+import json
+
+app = Flask(__name__)
+
 @app.route('/save_preferences', methods=['POST'])
 def save_preferences():
+    file_path = os.path.join("public", "preferences.json")
+
     try:
+        # Load incoming data
         data = request.get_json(force=True)
 
-        # Define path for consistency
-        file_path = os.path.join("public", "preferences.json")
+        if data is None:
+            raise ValueError("Empty or invalid JSON payload")
 
-        # Create file if it doesn't exist
-        if not os.path.exists(file_path):
+        # Safeguard: Create file with empty list if missing or empty
+        if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
             with open(file_path, 'w') as f:
                 json.dump([], f)
 
-        # Read existing data
+        # Read existing preferences
         with open(file_path, 'r') as f:
-            existing_data = json.load(f)
+            try:
+                existing_data = json.load(f)
+            except json.JSONDecodeError:
+                existing_data = []
 
-        print("🩺 Saving teacher preferences:")
-        print("Full payload:", data)
-        print("Type of unavailable_slots:", type(data.get("unavailableSlots")))
-        print("Value of unavailable_slots:", data.get("unavailableSlots"))
+        print("🩺 Incoming teacher preferences:", data)
 
-        # Append and write back
+        # Append new preferences
         existing_data.append(data)
+
+        # Write updated preferences back to file
         with open(file_path, 'w') as f:
             json.dump(existing_data, f, indent=2)
 
         return jsonify({"status": "success", "message": "Preferences saved"})
 
     except Exception as e:
-        print("Error while saving preferences:", e)
+        print("🔥 Error while saving preferences:", str(e))
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
