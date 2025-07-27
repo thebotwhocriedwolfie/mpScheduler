@@ -240,3 +240,4 @@ schedule_result = generate_schedule(file_path,"Allocations.csv")
 # Print the generated schedule
 for entry in schedule_result['schedule']:
     print(entry)
+print(metrics)
