@@ -20,7 +20,7 @@ def save_preferences():
         data = request.json
         
         # Read existing data
-        with open("public",'preferences.json', 'r') as f:
+        with open("public/preferences.json", 'r') as f:
             existing_data = json.load(f)
 
         print("🩺 Saving teacher preferences:")
