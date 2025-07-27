@@ -413,6 +413,9 @@ function changeTimeslotToCode(day, time) {
     const timeCode = timeslotToCode[time];
     return dayCode + timeCode;  // e.g. "M1" for Monday 9–10
 }
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
 
         const fullDayCheckbox = document.getElementById('fullDay');
         const timeslotGrid = document.getElementById('timeslotGrid');
@@ -483,9 +486,7 @@ document.getElementById('schedulerForm').addEventListener('submit', function(e) 
         alert('Failed to save preferences. Please try again.');
     });
 });
-        function capitalize(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-        }
+
 
         // Add smooth hover effects
         document.querySelectorAll('.day-option label, .timeslot-option label').forEach(label => {
