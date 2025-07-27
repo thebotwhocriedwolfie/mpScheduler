@@ -234,14 +234,4 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     }
                     
 
-    
-
-
-#testing function 
-file_path = "2023_APRIL_SEM.xlsx" 
-schedule_result = generate_schedule(file_path,"Allocations.csv")
-
-# Print the generated schedule
-for entry in schedule_result['schedule']:
-    print(entry)
 
