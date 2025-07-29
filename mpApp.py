@@ -38,7 +38,7 @@ def save_preferences():
             except json.JSONDecodeError:
                 existing_data = []
 
-        print("🩺 Incoming teacher preferences:", data)
+        print("Incoming teacher preferences:", data)
 
         # Append new preferences
         existing_data.append(data)
