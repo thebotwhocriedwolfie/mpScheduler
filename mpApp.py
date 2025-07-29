@@ -17,42 +17,42 @@ CORS(app) #enable cors
 
 @app.route('/save_preferences', methods=['POST'])
 def save_preferences():
-    file_path = os.path.join("public", "preferences.json")
+    file_path = "preferences.json"
+    data = request.get_json()
 
+    # Validate payload
+    if not data or 'TeacherId' not in data:
+        return jsonify({"status": "error", "message": "Missing TeacherId"}), 400
+
+    # Initialize or load existing preferences
     try:
-        # Load incoming data
-        data = request.get_json(force=True)
-
-        if data is None:
-            raise ValueError("Empty or invalid JSON payload")
-
-        # Safeguard: Create file with empty list if missing or empty
-        if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-            with open(file_path, 'w') as f:
-                json.dump([], f)
-
-        # Read existing preferences
-        with open(file_path, 'r') as f:
-            try:
+        existing_data = {}
+        if os.path.exists(file_path):
+            with open(file_path, 'r') as f:
                 existing_data = json.load(f)
-            except json.JSONDecodeError:
-                existing_data = []
-
-        print("Incoming teacher preferences:", data)
-
-        # Append new preferences
-        existing_data.append(data)
-
-        # Write updated preferences back to file
-        with open(file_path, 'w') as f:
-            json.dump(existing_data, f, indent=2)
-
-        return jsonify({"status": "success", "message": "Preferences saved"})
-
+                # Convert old list format to dict if needed
+                if isinstance(existing_data, list):
+                    existing_data = {item['TeacherId']: item for item in existing_data}
     except Exception as e:
-        print("🔥 Error while saving preferences:", str(e))
-        return jsonify({"status": "error", "message": str(e)}), 500
+        print(f"Warning: Reset corrupted preferences. Error: {e}")
+        existing_data = {}
 
+    # Update preferences (dict format)
+    teacher_id = data['TeacherId']
+    existing_data[teacher_id] = {
+        'TeacherId': teacher_id,  # Explicitly include for reference
+        'unavailable_days': data.get('unavailableDays', []),
+        'unavailable_slots': data.get('unavailableSlots', []),
+        'full_day': data.get('fullDay', False)
+    }
+
+    # Atomic write (prevents corruption)
+    temp_path = f"{file_path}.tmp"
+    with open(temp_path, 'w') as f:
+        json.dump(existing_data, f, indent=2)
+    os.replace(temp_path, file_path)
+
+    return jsonify({"status": "success"})
 
 
 
