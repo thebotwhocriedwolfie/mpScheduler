@@ -167,6 +167,12 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     if assigned_teacher_id in teacher_prefs:
                         pref = teacher_prefs[assigned_teacher_id]
 
+                        #normalise values from form and in scheduler
+                        unavailable_slots = {
+                            slot.lower().replace(" ", "")  # "M1" → "m1", "TH2" → "th2"
+                            for slot in pref['unavailable_slots']
+                        }
+
                         if pref['full_day']:
                             preference_violations += 1
                             continue
