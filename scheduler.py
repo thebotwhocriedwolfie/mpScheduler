@@ -25,7 +25,11 @@ def get_day(timeslot):
 def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=None):
     
     if teacher_prefs is None:
-        teacher_prefs = {}  
+        teacher_prefs = {}
+
+    print("\n=== LOADED TEACHER PREFERENCES ===")  # Debug line
+    print(f"Type: {type(teacher_prefs)}")  # Should be dict
+    print(f"Contents: {teacher_prefs}")  # Show actual data
         
     # Load data
     data = load_data(file_path)
