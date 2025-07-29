@@ -211,7 +211,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                 if not scheduled_today:
                     results.append(
                         f"Error: Could not schedule Class {class_id}, Subject {subject_id}. "
-                        f"Hours count: {hours_count}/{required_hours}""
+                        f"Hours count: {hours_count}/{required_hours}"
                         f"Reason: {', '.join(error_messages) if error_messages else 'Unknown reason'}"
                     )
                     break #exit loop if no scheduling was possible
