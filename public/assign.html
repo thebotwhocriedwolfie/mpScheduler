@@ -92,104 +92,140 @@
     </div>
 
     <div class="main-container">
-        <!-- Statistics Section -->
-        <div class="stats-section">
-            <div class="stat-card">
-                <h3>Teachers</h3>
-                <div class="count" id="teacherCount">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Classes</h3>
-                <div class="count" id="classesCount">0</div>
-            </div>
-            <div class="progress-card">
-                <div class="progress-circle">
-                    <div class="progress-text">60%</div>
-                </div>
-                <div class="progress-label">Scheduler Score</div>
-            </div>
+    <!-- Statistics Section -->
+    <div class="stats-section">
+        <div class="stat-card">
+            <h3>Teachers</h3>
+            <div class="count" id="teacherCount">0</div>
         </div>
-        <div>
+        <div class="stat-card">
+            <h3>Classes</h3>
+            <div class="count" id="classesCount">0</div>
+        </div>
+        <div class="progress-card">
+            <div class="progress-circle">
+                <div class="progress-text">60%</div>
+            </div>
+            <div class="progress-label">Scheduler Score</div>
+        </div>
+    </div>
+    <div>
         <label for="fileDropdown">Select Dataset</label>
-                    <select id="fileDropdown" onchange="updateCounts()">
-                        <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
-                        <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
-                        <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
-                    </select>
-                    <!-- Upload public link -->
+        <select id="fileDropdown" onchange="updateCounts()">
+            <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
+            <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
+            <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
+        </select>
+        <h4>Allocate Teachers To Class</h4>
+        <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
+        <div id="allocationStatus"></div>
+    </div>
+    <div>
+        <h4>View Teacher Assignments</h4>
+        <button onclick="viewAssignments()">View Assignments</button>
+        <pre id="assignmentOutput"></pre>
+    </div>
+</div>
 
-                    <h4>Allocate Teachers To Class</h4>
-                    <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
-                    </div>
-        <div>
-            <h4>View Teacher Assignments</h4>
-            <button onclick="viewAssignments()">View Assignments</button>
-            <pre id="assignmentOutput"></pre>
-        </div>
-    <script>
-    function run_allocation() {
-        const selectedFile = document.getElementById("fileDropdown").value;
-        console.log("Sending file to backend:", selectedFile);
+<script>
+function run_allocation() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+    const statusDiv = document.getElementById("allocationStatus");
+    
+    statusDiv.innerHTML = "Processing allocation...";
+    console.log("Sending file to backend:", selectedFile);
+    
+    fetch("https://mpscheduler.onrender.com/assign_teachers", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        statusDiv.innerHTML = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+        console.log("Success:", data);
+        
+        // Clear old assignment display so user knows to refresh
+        document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
+    })
+    .catch(error => {
+        statusDiv.innerHTML = "❌ Assignment failed. Check console for details.";
+        console.error("Error:", error);
+    });
+}
 
-        fetch("https://mpscheduler.onrender.com/assign_teachers", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ file_path: selectedFile })
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert("Assignment complete! Allocations generated!");
-            console.log(data);
-        })
-        .catch(error => {
-            alert("Assignment failed.");
-            console.error("Error:", error);
-        });
-    }
+function viewAssignments() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+    const outputDiv = document.getElementById("assignmentOutput");
+    
+    outputDiv.textContent = "Loading assignments...";
+    
+    fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
+        method: "GET"
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            outputDiv.textContent = `Error: ${data.error}`;
+            return;
+        }
+        
+        if (data.length === 0) {
+            outputDiv.textContent = "No assignments found. Please run allocation first.";
+            return;
+        }
+        
+        const formatted = data.map(row => 
+            `Teacher: ${row.TeacherId} → Class: ${row.ClassId}, Subject: ${row.SubjectId}`
+        ).join('\n');
+        outputDiv.textContent = formatted;
+    })
+    .catch(err => {
+        console.error("Error loading assignments:", err);
+        outputDiv.textContent = "Error loading assignments. Check console for details.";
+    });
+}
 
-    function viewAssignments() {
-        const selectedFile = document.getElementById("fileDropdown").value;
+function updateCounts() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+    fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById("teacherCount").textContent = data.teacher_count;
+        document.getElementById("classesCount").textContent = data.classes_count;
+    })
+    .catch(error => {
+        console.error("Error fetching counts:", error);
+        document.getElementById("teacherCount").textContent = "Error";
+        document.getElementById("classesCount").textContent = "Error";
+    });
+}
 
-        fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
-            method: "GET"
-        })
-        .then(response => response.json())
-        .then(data => {
-            const formatted = data.map(row => 
-                `Class: ${row.ClassId}, Subject: ${row.SubjectId}, Teacher: ${row.TeacherId}`
-            ).join('\n');
-            document.getElementById("assignmentOutput").textContent = formatted;
-        })
-        .catch(err => console.error("Error loading assignments:", err));
-    }
-
-    function updateCounts() {
-        const selectedFile = document.getElementById("fileDropdown").value;
-
-        fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("teacherCount").textContent = data.teacher_count;
-            document.getElementById("classesCount").textContent = data.classes_count;
-        })
-        .catch(error => {
-            console.error("Error fetching counts:", error);
-        });
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     updateCounts(); // Now runs after HTML is fully loaded
 });
-
-
-</script>
-
-    </body>
-    </html>
+</script>   
+</body>
+</html>
