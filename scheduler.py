@@ -107,6 +107,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
 
             while hours_count < required_hours:
                 scheduled_today = False
+                error_messages=set() #reset error messages for each attempt
 
                 for timeslot in timeslot_columns:
                     current_day = get_day(timeslot)
@@ -210,10 +211,10 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                 if not scheduled_today:
                     results.append(
                         f"Error: Could not schedule Class {class_id}, Subject {subject_id}. "
-                        f"Remaining hours: {required_hours - hours_count}. "
+                        f"Hours count: {hours_count}/{required_hours}""
                         f"Reason: {', '.join(error_messages) if error_messages else 'Unknown reason'}"
                     )
-                    break
+                    break #exit loop if no scheduling was possible
     
     # Metrics once scheduling is completed 
     preference_score = 100 - (preference_violations / total_attempts * 100) if total_attempts > 0 else 0
