@@ -17,20 +17,26 @@ def load_data(file_path):
         'teacherSubject_df': pd.read_excel(xls, 'TeacherSubject Table')
     }
 
+#function to load teacher preferences.json
+def load_teacher_prefs(json_path):
+    try:
+        with open(json_path) as f:
+            prefs = json.load(f)
+            # Convert list to dict if needed
+            if isinstance(prefs, list):
+                print("Warning: Converted list preferences to dict")
+                return {pref['TeacherId']: pref for pref in prefs}  # Adjust key as needed
+            return prefs or {}  # Ensure empty dict if file is empty
+    except Exception as e:
+        print(f"Error loading preferences: {e}")
+        return {}  # Always return a dict
+
 def get_day(timeslot):
     #Supporting function to get day from timeslot
     return timeslot[:1] if not timeslot.startswith('th') else 'th'
 
 # Main function to generate the schedule
 def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=None):
-    
-    if teacher_prefs is None:
-        teacher_prefs = {}
-
-    print("\n=== LOADED TEACHER PREFERENCES ===")  # Debug line
-    print(f"Type: {type(teacher_prefs)}")  # Should be dict
-    print(f"Contents: {teacher_prefs}")  # Show actual data
-        
     # Load data
     data = load_data(file_path)
 
@@ -45,6 +51,13 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
 
     # Teacher-class-subject allocation
     teacherClassSubject_df = pd.read_csv(assignment_csv)
+
+    if teacher_prefs is None:
+        teacher_prefs = load_teacher_prefs("preferences.json")
+
+    print("\n=== LOADED TEACHER PREFERENCES ===")  # Debug line
+    print(f"Type: {type(teacher_prefs)}")  # Should be dict
+    print(f"Contents: {teacher_prefs}")  # Show actual data
 
     # Teacher definitions
     teacher_hours = {teacher_id: 0 for teacher_id in teacherSubject_df['TeacherId'].unique()}
@@ -221,7 +234,15 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv",teacher_prefs=
                     break #exit loop if no scheduling was possible
     
     # Metrics once scheduling is completed 
-    preference_score = 100 - (preference_violations / total_attempts * 100) if total_attempts > 0 else 0
+    total_preference_checks = sum(
+        1 for _ in teacherClassSubject_df.itertuples() 
+        if _.TeacherId in teacher_prefs  # Only count teachers WITH preferences
+    )
+    preference_score = (
+        100 - (preference_violations / total_preference_checks * 100) 
+        if total_preference_checks > 0 
+        else 100
+    )
 
     print("\n=== SCHEDULING SUMMARY ===")
     print(f"• Rooms Used: {len(used_rooms)}/{total_rooms}")
