@@ -2,10 +2,15 @@ import pandas as pd
 from collections import defaultdict
 from io import BytesIO
 
-#loading data
 def load_data(file_path):
     """Load data from Excel file into DataFrames"""
-    xls = pd.ExcelFile(file_path)
+    if file_path.startswith("http"):
+        response = requests.get(file_path)
+        response.raise_for_status()
+        xls = pd.ExcelFile(BytesIO(response.content))
+    else:
+        xls = pd.ExcelFile(file_path)
+    
     #defining tables
     return {
         'class_df': pd.read_excel(xls, 'Class Table'),
@@ -17,15 +22,11 @@ def load_data(file_path):
         'classSubject_df': pd.read_excel(xls, 'ClassSubject Table'),
         'teacherSubject_df': pd.read_excel(xls, 'TeacherSubject Table')
     }
-#optimised teacher allocation 
+
 def run_teacher_assignment(file_path):
-    if file_path.startswith("http"):
-        response = requests.get(file_path)
-        response.raise_for_status()
-        df = pd.read_excel(BytesIO(response.content), sheet_name='Teacher Table')
-    else:
-        df = pd.read_excel(file_path, sheet_name='Teacher Table')
-        
+    # Load all data first
+    data = load_data(file_path)
+    
     class_df = data['class_df']
     teacher_df = data['teacher_df']
     subject_df = data['subject_df']
@@ -85,13 +86,13 @@ def run_teacher_assignment(file_path):
 
     # Generate output
     output_df = pd.DataFrame(assignments)
-    output_df.to_csv("Allocations.csv", index=False)
     
     # Print some stats
-    used_teachers = len(set(output_df['TeacherId']))
+    used_teachers = len(set(output_df['TeacherId'])) if len(output_df) > 0 else 0
     total_teachers = len(teacher_df)
     print(f"\nOptimization Results:")
     print(f"Used {used_teachers} out of {total_teachers} available teachers")
-    print(f"Utilization rate: {used_teachers/total_teachers:.1%}")
+    if total_teachers > 0:
+        print(f"Utilization rate: {used_teachers/total_teachers:.1%}")
     
     return output_df
