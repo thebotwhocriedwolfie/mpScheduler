@@ -295,12 +295,12 @@
             <form id="schedulerForm">
                 <div class="form-group">
                     <label for="teacherId">Teacher ID Number:</label>
-                    <input type="text" id="teacherId" name="teacherId" required>
+                    <input type="text" id="TeacherId" name="TeacherId" required>
                 </div>
 
                 <div class="form-group">
                     <label for="teacherName">Teacher Name:</label>
-                    <input type="text" id="teacherName" name="teacherName" required>
+                    <input type="text" id="TeacherName" name="TeacherName" required>
                 </div>
 
                 <div class="form-group">
@@ -456,15 +456,15 @@ document.getElementById('schedulerForm').addEventListener('submit', function(e) 
     });
 
     const data = {
-        teacherId: formData.get('teacherId'),
-        teacherName: formData.get('teacherName'),
+        TeacherId: formData.get('TeacherId'),
+        TeacherName: formData.get('TeacherName'),
         unavailableDays: selectedDays,
         unavailableSlots: finalSlots,
         fullDay: formData.has('fullDay')  
     };
     console.log("Sending payload:", JSON.stringify(data));
 
-    alert('Schedule submitted successfully!\n\nTeacher: ' + data.teacherName + '\nID: ' + data.teacherId);
+    alert('Schedule submitted successfully!\n\nTeacher: ' + data.TeacherName + '\nID: ' + data.TeacherId);
 
     fetch('https://mpscheduler.onrender.com/save_preferences', {  
         method: 'POST',
