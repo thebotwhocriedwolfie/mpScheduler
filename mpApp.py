@@ -111,6 +111,8 @@ def api_assign_teachers():
 
     try:
         output_df = run_teacher_assignment(file_path)
+        #overite static allocation csv file
+        output_df.to_csv("Allocations.csv",index=False)
         #return summary: number of teachers used, total allocations
         summary = {
             'assignments_count': len(output_df),
