@@ -116,6 +116,12 @@
             <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
             <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
         </select>
+        <h4>Upload Your Own Dataset</h4>
+        <form id="uploadForm">
+            <input type="file" id="fileInput" name="file" accept=".xlsx" required />
+            <button type="submit">Upload</button>
+        </form>
+
         <h4>Allocate Teachers To Class</h4>
         <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
         <div id="allocationStatus"></div>
@@ -229,3 +235,4 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>   
 </body>
 </html>
+
