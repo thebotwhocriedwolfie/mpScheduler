@@ -228,6 +228,39 @@ function updateCounts() {
         document.getElementById("classesCount").textContent = "Error";
     });
 }
+document.getElementById('uploadForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+
+  const formData = new FormData();
+  const file = document.getElementById('fileInput').files[0];
+  formData.append('file', file);
+
+  fetch('https://mpscheduler.onrender.com/upload_file', {
+    method: 'POST',
+    body: formData
+  })
+.then(data => {
+  alert(data.message);
+  const uploadedFilePath = data.file_path; // e.g., "uploads/2025_CUSTOM.xlsx"
+
+  const dropdown = document.getElementById('fileDropdown');
+
+  // Check if file already exists in dropdown
+  const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
+  if (!exists) {
+    const newOption = document.createElement("option");
+    newOption.value = uploadedFilePath;
+    newOption.text = uploadedFilePath.split('/').pop(); // Show just the filename
+    dropdown.appendChild(newOption);
+  }
+
+  // Select the newly uploaded file
+  dropdown.value = uploadedFilePath;
+
+  // Optionally, update the stats (if needed)
+  updateCounts();
+})
+
 
 document.addEventListener('DOMContentLoaded', function() {
     updateCounts(); // Now runs after HTML is fully loaded
@@ -235,4 +268,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>   
 </body>
 </html>
+
 
