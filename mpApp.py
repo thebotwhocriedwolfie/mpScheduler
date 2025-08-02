@@ -169,6 +169,26 @@ def api_get_counts():
 
 
 
+UPLOAD_FOLDER = 'powerappsCSV'  # Change from 'uploads' to 'powerappsCSV'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'message': 'No file provided'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': 'Empty filename'}), 400
+
+    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(file_path)
+
+    return jsonify({
+        'message': f'File {file.filename} uploaded successfully.',
+        'file_path': f'powerappsCSV/{file.filename}'  # Match dropdown values
+    })
+
 
 if __name__ == '__main__':
     app.run(debug=True)
