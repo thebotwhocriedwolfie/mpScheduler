@@ -3,9 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teacher Allocations</title>
+    <title>Teacher Assigner</title>
     <style>
-         .stat-card {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin-left: 15px;
+            color: #333;
+        }
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        /*stat section*/
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
             background: white;
             padding: 20px;
             border-radius: 8px;
@@ -82,193 +109,258 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
+        /*assign button*/
+        .assign-btn {
+            background: #c41e3a;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .assign-btn:hover {
+            background: #45a049;
+        }
+        button {
+            background: #f37c21;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1976D2;
+        }
+        select, input[type="file"] {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #assignmentOutput {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #allocationStatus {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            background: #e3f2fd;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
     </style>
-    </head>
-    <body>
-        <div class="header">
-        <img src="images\tp.jpeg" width="100" height="80" >
+</head>
+<body>
+    <div class="header">
+        <img src="images/tp.jpeg" width="100" height="80" alt="Logo">
         <h1>Teacher Assigner</h1>
     </div>
 
     <div class="main-container">
-    <!-- Statistics Section -->
-    <div class="stats-section">
-        <div class="stat-card">
-            <h3>Teachers</h3>
-            <div class="count" id="teacherCount">0</div>
-        </div>
-        <div class="stat-card">
-            <h3>Classes</h3>
-            <div class="count" id="classesCount">0</div>
-        </div>
-        <div class="progress-card">
-            <div class="progress-circle">
-                <div class="progress-text">60%</div>
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <h3>Teachers</h3>
+                <div class="count" id="teacherCount">0</div>
             </div>
-            <div class="progress-label">Scheduler Score</div>
+            <div class="stat-card">
+                <h3>Classes</h3>
+                <div class="count" id="classesCount">0</div>
+            </div>
+            <div class="progress-card">
+                <div class="progress-circle">
+                    <div class="progress-text">60%</div>
+                </div>
+                <div class="progress-label">Scheduler Score</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <label for="fileDropdown">Select Dataset</label>
+            <select id="fileDropdown" onchange="updateCounts()">
+                <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
+                <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
+                <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
+            </select>
+            
+            <h4>Upload Your Own Dataset</h4>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" name="file" accept=".xlsx" required />
+                <button type="submit">Upload</button>
+            </form>
+
+            <h4>Allocate Teachers To Class</h4>
+            <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
+            <div id="allocationStatus"></div>
+        </div>
+        
+        <div class="section">
+            <h4>View Teacher Assignments</h4>
+            <button onclick="viewAssignments()">View Assignments</button>
+            <pre id="assignmentOutput"></pre>
         </div>
     </div>
-    <div>
-        <label for="fileDropdown">Select Dataset</label>
-        <select id="fileDropdown" onchange="updateCounts()">
-            <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
-            <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
-            <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
-        </select>
-        <h4>Upload Your Own Dataset</h4>
-        <form id="uploadForm">
-            <input type="file" id="fileInput" name="file" accept=".xlsx" required />
-            <button type="submit">Upload</button>
-        </form>
 
-        <h4>Allocate Teachers To Class</h4>
-        <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
-        <div id="allocationStatus"></div>
-    </div>
-    <div>
-        <h4>View Teacher Assignments</h4>
-        <button onclick="viewAssignments()">View Assignments</button>
-        <pre id="assignmentOutput"></pre>
-    </div>
-</div>
-
-<script>
-function run_allocation() {
-    const selectedFile = document.getElementById("fileDropdown").value;
-    const statusDiv = document.getElementById("allocationStatus");
-    
-    statusDiv.innerHTML = "Processing allocation...";
-    console.log("Sending file to backend:", selectedFile);
-    
-    fetch("https://mpscheduler.onrender.com/assign_teachers", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ file_path: selectedFile })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    <script>
+        function run_allocation() {
+            const selectedFile = document.getElementById("fileDropdown").value;
+            const statusDiv = document.getElementById("allocationStatus");
+            
+            statusDiv.innerHTML = "Processing allocation...";
+            console.log("Sending file to backend:", selectedFile);
+            
+            fetch("https://mpscheduler.onrender.com/assign_teachers", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ file_path: selectedFile })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                statusDiv.innerHTML = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+                console.log("Success:", data);
+                
+                // Clear old assignment display so user knows to refresh
+                document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
+            })
+            .catch(error => {
+                statusDiv.innerHTML = "❌ Assignment failed. Check console for details.";
+                console.error("Error:", error);
+            });
         }
-        return response.json();
-    })
-    .then(data => {
-        statusDiv.innerHTML = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
-        console.log("Success:", data);
-        
-        // Clear old assignment display so user knows to refresh
-        document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
-    })
-    .catch(error => {
-        statusDiv.innerHTML = "❌ Assignment failed. Check console for details.";
-        console.error("Error:", error);
-    });
-}
 
-function viewAssignments() {
-    const selectedFile = document.getElementById("fileDropdown").value;
-    const outputDiv = document.getElementById("assignmentOutput");
-    
-    outputDiv.textContent = "Loading assignments...";
-    
-    fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
-        method: "GET"
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        function viewAssignments() {
+            const selectedFile = document.getElementById("fileDropdown").value;
+            const outputDiv = document.getElementById("assignmentOutput");
+            
+            outputDiv.textContent = "Loading assignments...";
+            
+            fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
+                method: "GET"
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    outputDiv.textContent = `Error: ${data.error}`;
+                    return;
+                }
+                
+                if (data.length === 0) {
+                    outputDiv.textContent = "No assignments found. Please run allocation first.";
+                    return;
+                }
+                
+                const formatted = data.map(row => 
+                    `Teacher: ${row.TeacherId} → Class: ${row.ClassId}, Subject: ${row.SubjectId}`
+                ).join('\n');
+                outputDiv.textContent = formatted;
+            })
+            .catch(err => {
+                console.error("Error loading assignments:", err);
+                outputDiv.textContent = "Error loading assignments. Check console for details.";
+            });
         }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            outputDiv.textContent = `Error: ${data.error}`;
-            return;
+
+        function updateCounts() {
+            const selectedFile = document.getElementById("fileDropdown").value;
+            fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById("teacherCount").textContent = data.teacher_count;
+                document.getElementById("classesCount").textContent = data.classes_count;
+            })
+            .catch(error => {
+                console.error("Error fetching counts:", error);
+                document.getElementById("teacherCount").textContent = "Error";
+                document.getElementById("classesCount").textContent = "Error";
+            });
         }
-        
-        if (data.length === 0) {
-            outputDiv.textContent = "No assignments found. Please run allocation first.";
-            return;
-        }
-        
-        const formatted = data.map(row => 
-            `Teacher: ${row.TeacherId} → Class: ${row.ClassId}, Subject: ${row.SubjectId}`
-        ).join('\n');
-        outputDiv.textContent = formatted;
-    })
-    .catch(err => {
-        console.error("Error loading assignments:", err);
-        outputDiv.textContent = "Error loading assignments. Check console for details.";
-    });
-}
 
-function updateCounts() {
-    const selectedFile = document.getElementById("fileDropdown").value;
-    fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        document.getElementById("teacherCount").textContent = data.teacher_count;
-        document.getElementById("classesCount").textContent = data.classes_count;
-    })
-    .catch(error => {
-        console.error("Error fetching counts:", error);
-        document.getElementById("teacherCount").textContent = "Error";
-        document.getElementById("classesCount").textContent = "Error";
-    });
-}
-document.getElementById('uploadForm').addEventListener('submit', function (e) {
-  e.preventDefault();
+        // Fixed file upload event listener
+        document.getElementById('uploadForm').addEventListener('submit', function (e) {
+            e.preventDefault();
 
-  const formData = new FormData();
-  const file = document.getElementById('fileInput').files[0];
-  formData.append('file', file);
+            const formData = new FormData();
+            const file = document.getElementById('fileInput').files[0];
+            formData.append('file', file);
 
-  fetch('https://mpscheduler.onrender.com/upload_file', {
-    method: 'POST',
-    body: formData
-  }).then(response => {
-      if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json(); 
-  }) .then(data => {
-      alert(data.message);
-      const uploadedFilePath = data.file_path; 
-      const dropdown = document.getElementById('fileDropdown');
+            fetch('https://mpscheduler.onrender.com/upload_file', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json(); // ✅ This was missing!
+            })
+            .then(data => {
+                alert(data.message);
+                const uploadedFilePath = data.file_path; // e.g., "uploads/2025_CUSTOM.xlsx"
 
-  // Check if file already exists in dropdown
-  const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
-  if (!exists) {
-    const newOption = document.createElement("option");
-    newOption.value = uploadedFilePath;
-    newOption.text = uploadedFilePath.split('/').pop(); // Show just the filename
-    dropdown.appendChild(newOption);
-  }
+                const dropdown = document.getElementById('fileDropdown');
 
-  // Select the newly uploaded file
-  dropdown.value = uploadedFilePath;
+                // Check if file already exists in dropdown
+                const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
+                if (!exists) {
+                    const newOption = document.createElement("option");
+                    newOption.value = uploadedFilePath;
+                    newOption.text = uploadedFilePath.split('/').pop(); // Show just the filename
+                    dropdown.appendChild(newOption);
+                }
 
-  // Optionally, update the stats (if needed)
-  updateCounts();
-})
+                // Select the newly uploaded file
+                dropdown.value = uploadedFilePath;
 
+                // Optionally, update the stats (if needed)
+                updateCounts();
+            })
+            .catch(error => {
+                console.error('Error uploading file:', error);
+                alert('Error uploading file: ' + error.message);
+            });
+        });
 
-document.addEventListener('DOMContentLoaded', function() {
-    updateCounts(); // Now runs after HTML is fully loaded
-});
-</script>   
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCounts(); // Now runs after HTML is fully loaded
+        });
+    </script>   
 </body>
 </html>
 
