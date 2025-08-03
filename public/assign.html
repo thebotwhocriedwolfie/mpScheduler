@@ -238,12 +238,15 @@ document.getElementById('uploadForm').addEventListener('submit', function (e) {
   fetch('https://mpscheduler.onrender.com/upload_file', {
     method: 'POST',
     body: formData
-  })
-.then(data => {
-  alert(data.message);
-  const uploadedFilePath = data.file_path; // e.g., "uploads/2025_CUSTOM.xlsx"
-
-  const dropdown = document.getElementById('fileDropdown');
+  }).then(response => {
+      if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json(); 
+  }) .then(data => {
+      alert(data.message);
+      const uploadedFilePath = data.file_path; 
+      const dropdown = document.getElementById('fileDropdown');
 
   // Check if file already exists in dropdown
   const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
@@ -268,5 +271,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>   
 </body>
 </html>
+
 
 
