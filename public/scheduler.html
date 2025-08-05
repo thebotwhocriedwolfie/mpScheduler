@@ -359,6 +359,7 @@
                     </div>
                     <button class="schedule-btn" id="scheduleBtn" onclick="runScheduler()">Run Scheduler</button>
                     <div class="file-status" id="fileStatus">Checking for selected file...</div>
+                    <button class="backToAssign" onclick="backToAssign()">Back</button>
                 </div>
 
                 <!-- Error Logs -->
@@ -374,6 +375,9 @@
     </div>
 
     <script>
+        function backToAssign(){
+            window.location.href = "assign.html";
+        }
         let selectedFilePath = null;
 
         // Load selected file on page load
@@ -472,5 +476,6 @@
     </script>
 </body>
 </html>
+
 
 
