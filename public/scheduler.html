@@ -42,6 +42,42 @@
             margin: 0 auto;
             padding: 30px;
         }
+        /*the file status section*/
+        .selected-file-info {
+            margin-bottom: 15px;
+        }
+        
+        .selected-file-info label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        #selectedFileName {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-family: monospace;
+        }
+        
+        .file-status {
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .file-status.error {
+            color: #d32f2f;
+        }
+        
+        .file-status.success {
+            color: #388e3c;
+        }
+        
+        .schedule-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
 
         /* Stats Section */
         .stats-section {
@@ -317,13 +353,12 @@
 
                 <!-- Center Controls -->
                 <div class="center-controls">
-                    <label for="fileDropdown">Select Dataset</label>
-                    <select id="fileDropdown">
-                        <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
-                        <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
-                        <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
-                    </select>
+                    <div class="selected-file-info">
+                        <label>Selected Dataset:</label>
+                        <div id="selectedFileName"> Loading...</div>
+                    </div>
                     <button class="schedule-btn" onclick="runScheduler()">Run Scheduler</button>
+                    <div class="file-status" id="fileStatus"></div>
                 </div>
 
                 <!-- Error Logs -->
@@ -339,67 +374,102 @@
     </div>
 
     <script>
-    function runScheduler() {
-    const selectedFile = document.getElementById("fileDropdown").value;
+        let selectedFilePath = null;
 
-    fetch("https://mpscheduler.onrender.com/generate_schedule", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ file_path: selectedFile })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Display full log
-        document.getElementById("logOutput").innerText = JSON.stringify(data.schedule, null, 2);
+    // Load selected file on page load
+    async function loadSelectedFile() {
+        try {
+            const response = await fetch("https://mpscheduler.onrender.com/get_selected_file");
+            const data = await response.json();
+            
+            if (data.file_path) {
+                selectedFilePath = data.file_path;
+                
+                // Extract just the filename for display
+                const fileName = data.file_path.split('/').pop().replace('.xlsx', '');
+                document.getElementById("selectedFileName").textContent = fileName;
+                document.getElementById("fileStatus").textContent = "✓ Ready to generate schedule";
+                document.getElementById("fileStatus").className = "file-status success";
+                document.getElementById("scheduleBtn").disabled = false;
+                
+                // Load counts for this file
+                loadCounts(selectedFilePath);
+            } else {
+                throw new Error("No file selected");
+            }
+        } catch (error) {
+            console.error('Error loading selected file:', error);
+            document.getElementById("selectedFileName").textContent = "No file selected";
+            document.getElementById("fileStatus").textContent = "⚠ Please run allocation first to select a file";
+            document.getElementById("fileStatus").className = "file-status error";
+            document.getElementById("scheduleBtn").disabled = true;
+        }
+    }
 
-        // Filter error messages
-        const errorMessages = data.schedule.filter(entry => entry.startsWith("Error:"));
-
-        // Display only error messages
-        document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
-    })
-    .catch(error => {
-        document.getElementById("logOutput").innerText = "Error: " + error.message;
-        document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
-    });
-}
-/*fetch("https://mpscheduler.onrender.com/counts", {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        const selectedFile = document.getElementById("fileDropdown").value;
-    })
-        .then(response => response.json())
-        .then(data => {
-            // Display counts
+    // Load counts for the selected file
+    async function loadCounts(filePath) {
+        try {
+            const response = await fetch(`https://mpscheduler.onrender.com/counts?file_path=${encodeURIComponent(filePath)}`);
+            const data = await response.json();
+            
             document.getElementById("teacherCount").textContent = data.teacher_count;
             document.getElementById("classesCount").textContent = data.classes_count;
             document.getElementById("roomsCount").textContent = data.rooms_count;
-        }).catch(error => {
+        } catch (error) {
             console.error("Error fetching counts:", error);
-        });*/
-document.addEventListener("DOMContentLoaded", function() {
-    const selectedFile = document.getElementById("fileDropdown").value;
-
-    fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json"
+            document.getElementById("teacherCount").textContent = "?";
+            document.getElementById("classesCount").textContent = "?";
+            document.getElementById("roomsCount").textContent = "?";
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("teacherCount").textContent = data.teacher_count;
-        document.getElementById("classesCount").textContent = data.classes_count;
-        document.getElementById("roomsCount").textContent = data.rooms_count;
-    })
-    .catch(error => {
-        console.error("Error fetching counts:", error);
-    });
-});
+    }
+
+    function runScheduler() {
+        if (!selectedFilePath) {
+            alert("No file selected. Please run allocation first.");
+            return;
+        }
+
+        // Disable button during processing
+        document.getElementById("scheduleBtn").disabled = true;
+        document.getElementById("scheduleBtn").textContent = "Processing...";
+
+        fetch("https://mpscheduler.onrender.com/generate_schedule", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ file_path: selectedFilePath })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Display full log
+            document.getElementById("logOutput").innerText = JSON.stringify(data.schedule, null, 2);
+
+            // Filter error messages
+            const errorMessages = data.schedule.filter(entry => entry.startsWith("Error:"));
+
+            // Display only error messages
+            document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
+        })
+        .catch(error => {
+            document.getElementById("logOutput").innerText = "Error: " + error.message;
+            document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
+        })
+        .finally(() => {
+            // Re-enable button
+            document.getElementById("scheduleBtn").disabled = false;
+            document.getElementById("scheduleBtn").textContent = "Run Scheduler";
+        });
+    }
+
+    // Load selected file when page loads
+    document.addEventListener("DOMContentLoaded", loadSelectedFile);
+    </script>
     </script>
 </body>
 </html>
+
