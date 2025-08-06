@@ -232,9 +232,6 @@ function run_allocation() {
             if (errorData.error === 'INSUFFICIENT_TEACHERS') {
                 statusDiv.innerHTML = "Insufficient Teachers Available";
 
-                // Short alert
-                alert("Allocations Incomplete: Insufficient Teachers");
-
                 const details = errorData.details;
                 let message = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
 
@@ -392,6 +389,7 @@ function run_allocation() {
 
 </body>
 </html>
+
 
 
 
