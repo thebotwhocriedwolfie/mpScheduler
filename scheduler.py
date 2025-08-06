@@ -30,7 +30,8 @@ def load_teacher_prefs(json_path):
         return {}
 
 def get_day(timeslot):
-    return timeslot[:1] if not timeslot.startswith('th') else 'th'
+    """Extract day from timeslot - now handles 'r' for Thursday"""
+    return timeslot[:1]  # Simply return first character (m, t, w, r, f)
 
 def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs=None):
     # Load data
@@ -57,8 +58,8 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     # Teacher definitions
     teacher_hours = {teacher_id: 0 for teacher_id in teacherSubject_df['TeacherId'].unique()}
 
-    # Define timeslot columns in room_df
-    timeslot_columns = [col for col in room_df.columns if col.startswith(('m', 't', 'w', 'th', 'f'))]
+    # Define timeslot columns in room_df - now includes 'r' for Thursday
+    timeslot_columns = [col for col in room_df.columns if col.startswith(('m', 't', 'w', 'r', 'f'))]
 
     # Initialize class and teacher schedules
     class_schedule = pd.DataFrame(columns=['ClassId'] + timeslot_columns)
@@ -86,10 +87,11 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
     results = []
 
-    # ✅ PRIORITY LUNCH SCHEDULING: Reserve lunch slots FIRST
+    # PRIORITY LUNCH SCHEDULING: Reserve lunch slots firts
     print("\n=== SCHEDULING LUNCH HOURS ===")
     for class_id in class_df['ClassId']:
-        for day_prefix in ['m', 't', 'w', 'th', 'f']:
+        # Updated to use 'r' for Thursday instead of 'th'
+        for day_prefix in ['m', 't', 'w', 'r', 'f']:
             # Try slots 4, 5, 3 in order of preference
             possible_lunch_slots = [f"{day_prefix}4", f"{day_prefix}5", f"{day_prefix}3"]
             
@@ -106,7 +108,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
             if not lunch_scheduled:
                 results.append(f"Warning: Could not schedule lunch for Class {class_id} on {day_prefix}")
 
-    # NOW SCHEDULE SUBJECTS (avoiding lunch slots)
+    #SCHEDULE SUBJECTS (avoiding lunch slots)
     for class_id in class_df['ClassId']:
         class_subjects = classSubject_df[classSubject_df['ClassId'] == class_id]['SubjectId']
 
@@ -159,7 +161,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
                     required_slots = timeslot_columns[current_idx:end_idx]
 
-                    # ✅ LUNCH CHECK: Skip if any slot conflicts with lunch
+                    # LUNCH CHECK: Skip if any slot conflicts with lunch
                     class_row = class_schedule[class_schedule['ClassId'] == class_id]
                     if any(class_row[slot].iloc[0] == 'LUNCH' for slot in required_slots):
                         error_messages.add("Overlaps with lunch hour")
@@ -174,7 +176,16 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                             error_messages.add("Teacher unavailable (full day)")
                             continue
 
-                        if current_day.lower() in [d.lower() for d in pref.get('unavailable_days', [])]:
+                        # Updated preference checking to handle 'r' for Thursday
+                        unavailable_days = [d.lower() for d in pref.get('unavailable_days', [])]
+                        # Map 'thursday' or 'r' to 'r' for consistency
+                        current_day_check = current_day.lower()
+                        if current_day_check == 'r':
+                            thursday_variants = ['thursday', 'r', 'th']
+                        else:
+                            thursday_variants = [current_day_check]
+                        
+                        if any(variant in unavailable_days for variant in thursday_variants):
                             preference_violations += 1
                             error_messages.add(f"Teacher unavailable on {current_day}")
                             continue
@@ -214,7 +225,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                         error_messages.add("No available rooms")
                         continue
 
-                    # ✅ ALL CHECKS PASSED - MAKE THE BOOKING
+                    #ALL CHECKS PASSED - MAKE THE BOOKING!!
                     room_id = available_rooms.iloc[0]['RoomID']
 
                     # Update all schedules
