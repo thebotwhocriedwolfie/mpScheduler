@@ -133,12 +133,13 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: conic-gradient(#c41e3a 0deg 216deg, #e9ecef 216deg);
+            background: #e9ecef;
             display: flex;
             align-items: center;
             justify-content: center;
             margin-bottom: 10px;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         .progress-circle::before {
@@ -163,6 +164,58 @@
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        /* Success Rate Card */
+        .success-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #28a745;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .success-circle::before {
+            content: '';
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        .success-text {
+            position: relative;
+            z-index: 1;
+            font-weight: 700;
+            color: #28a745;
+        }
+
+        .success-label {
+            color: #28a745;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
         }
 
         /* Control Section */
@@ -371,10 +424,16 @@
                 <div class="count" id="roomsCount">0</div>
             </div>
             <div class="progress-card">
-                <div class="progress-circle">
-                    <div class="progress-text">60%</div>
+                <div class="progress-circle" id="preferenceCircle">
+                    <div class="progress-text" id="preferenceScore">0%</div>
                 </div>
-                <div class="progress-label">Scheduler Score</div>
+                <div class="progress-label">Teacher Preferences</div>
+            </div>
+            <div class="success-card">
+                <div class="success-circle" id="successCircle">
+                    <div class="success-text" id="successRate">0%</div>
+                </div>
+                <div class="success-label">Success Rate</div>
             </div>
         </div>
 
@@ -428,7 +487,15 @@
         function backToAssign(){
             window.location.href = "assign.html";
         }
+        
         let selectedFilePath = null;
+
+        // Function to update progress circle
+        function updateProgressCircle(elementId, percentage, color = '#c41e3a') {
+            const circle = document.getElementById(elementId);
+            const degrees = (percentage / 100) * 360;
+            circle.style.background = `conic-gradient(${color} 0deg ${degrees}deg, #e9ecef ${degrees}deg)`;
+        }
 
         // Load selected file on page load
         async function loadSelectedFile() {
@@ -510,17 +577,38 @@
                 // Display only error messages
                 document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
 
-                //error summary logic
-                let summary= new Set();
+                // Update metrics if available
+                if (data.metrics) {
+                    // Update preference score
+                    const preferenceScore = parseFloat(data.metrics.preference_score);
+                    document.getElementById("preferenceScore").textContent = `${preferenceScore.toFixed(1)}%`;
+                    updateProgressCircle('preferenceCircle', preferenceScore, '#c41e3a');
 
-                errorMessages.forEach(msg=> {
+                    // Calculate and update success rate
+                    const successful = data.metrics.successful_assignments || 0;
+                    const failed = data.metrics.failed_assignments || 0;
+                    const total = successful + failed;
+                    const successRate = total > 0 ? (successful / total) * 100 : 0;
+                    
+                    document.getElementById("successRate").textContent = `${successRate.toFixed(1)}%`;
+                    updateProgressCircle('successCircle', successRate, '#28a745');
+                }
+
+                //error summary logic
+                let summary = new Set();
+
+                errorMessages.forEach(msg => {
                     if (msg.includes("No available Teachers")) {
-                summary.add("Not enough teachers available for some subjects. Please allocate more at url");
+                        summary.add("Not enough teachers available for some subjects. Please allocate more at url");
                     }
                     if (msg.includes("No available rooms")) {
                         summary.add("Room unavailability.");
                     }
+                    if (msg.includes("Could not schedule")) {
+                        summary.add("Some classes could not be scheduled due to conflicts.");
+                    }
                 });
+                
                 const summaryBox = document.getElementById("errorSummaryContent");
 
                 if (summary.size > 0) {
@@ -550,10 +638,5 @@
     </script>
 </body>
 </html>
-
-
-
-
-
 
 
