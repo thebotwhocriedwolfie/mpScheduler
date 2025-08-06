@@ -297,6 +297,96 @@
             transform: translateY(0);
         }
 
+        /* Button Styling for Back and ClassSync buttons */
+        .backToAssign, .classsync-btn {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .backToAssign:hover, .classsync-btn:hover {
+            background: linear-gradient(135deg, #495057, #343a40);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(108, 117, 125, 0.3);
+        }
+
+        .backToAssign:active, .classsync-btn:active {
+            transform: translateY(0);
+        }
+
+        .classsync-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            margin-top: 10px;
+        }
+
+        .classsync-btn:hover {
+            background: linear-gradient(135deg, #0056b3, #004085);
+        }
+
+        /* Right Column - Error Summary and Logs */
+        .right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Error Summary Section - Now positioned at top of right column */
+        .error-summary {
+            background: white;
+            border-left: 4px solid #dc3545;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .error-summary-header {
+            background: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error-summary-content {
+            padding: 15px 20px;
+            min-height: 80px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .error-summary-content.empty {
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .error-summary-content ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #dc3545;
+        }
+
+        .error-summary-content li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
+        .error-summary-content p {
+            margin-bottom: 8px;
+            color: #dc3545;
+            font-weight: 500;
+        }
+
         /* Log Boxes */
         .log-box {
             flex: 1;
@@ -335,48 +425,6 @@
         #errorLogs .log-header {
             background: #dc3545;
         }
-        /*error summary styling*/
-        /* Error Summary Section */
-        .error-summary {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            margin-top: 20px;
-            overflow: hidden;
-            border-left: 4px solid #dc3545;
-        }
-
-        .error-summary-header {
-            background: #dc3545;
-            color: white;
-            padding: 12px 20px;
-            font-weight: 600;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .error-summary-content {
-            padding: 15px 20px;
-            min-height: 60px;
-        }
-
-        .error-summary-content.empty {
-            color: #6c757d;
-            font-style: italic;
-        }
-
-        .error-summary-content ul {
-            margin: 0;
-            padding-left: 20px;
-            color: #dc3545;
-        }
-
-        .error-summary-content li {
-            margin-bottom: 5px;
-            line-height: 1.4;
-        }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -394,6 +442,10 @@
                 border: none;
                 border-top: 1px solid #dee2e6;
                 border-bottom: 1px solid #dee2e6;
+            }
+
+            .right-column {
+                flex-direction: column;
             }
 
             .stats-section {
@@ -461,23 +513,29 @@
                     <button class="schedule-btn" id="scheduleBtn" onclick="runScheduler()">Run Scheduler</button>
                     <div class="file-status" id="fileStatus">Checking for selected file...</div>
                     <button class="backToAssign" onclick="backToAssign()">Back</button>
-                    <a href="https://apps.powerapps.com/play/e/default-25a99bf0-8e72-472a-ae50-adfbdf0df6f1/a/ac993c34-2e91-472b-9cca-2e0771ee0cbd?tenantId=25a99bf0-8e72-472a-ae50-adfbdf0df6f1&hint=94d6d9ca-b956-48e0-ac37-1df11161f614&source=sharebutton&sourcetime=1754457103651"><button>ClassSync Tp</button></a>
+                    <a href="https://apps.powerapps.com/play/e/default-25a99bf0-8e72-472a-ae50-adfbdf0df6f1/a/ac993c34-2e91-472b-9cca-2e0771ee0cbd?tenantId=25a99bf0-8e72-472a-ae50-adfbdf0df6f1&hint=94d6d9ca-b956-48e0-ac37-1df11161f614&source=sharebutton&sourcetime=1754457103651" class="classsync-btn">ClassSync TP</a>
                 </div>
 
-                <!-- Error Logs -->
-                <div class="log-box" id="errorLogs">
-                    <div class="log-header">Error Logs</div>
-                    <div class="log-content">
-                        <p>Error logs will appear here:</p>
-                        <div id="errorLogOutput"></div>
+                <!-- Right Column: Error Summary + Error Logs -->
+                <div class="right-column">
+                    <!-- Error Summary - Now at top -->
+                    <div class="error-summary">
+                        <div class="error-summary-header">
+                            Scheduling Summary
+                        </div>
+                        <div class="error-summary-content empty" id="errorSummaryContent">
+                            No scheduling issues detected.
+                        </div>
                     </div>
-                </div>
-                <div class="error-summary">
-                <div class="error-summary-header">
-                    Scheduling Summary
-                </div>
-                <div class="error-summary-content empty" id="errorSummaryContent">
-                    No scheduling issues detected.
+
+                    <!-- Error Logs - Now below summary -->
+                    <div class="log-box" id="errorLogs">
+                        <div class="log-header">Error Logs</div>
+                        <div class="log-content">
+                            <p>Error logs will appear here:</p>
+                            <div id="errorLogOutput"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -641,7 +699,3 @@
     </script>
 </body>
 </html>
-
-
-
-
