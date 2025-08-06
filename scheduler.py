@@ -84,7 +84,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     class_subject_room = {}
     daily_subject_hours = defaultdict(int)
     lunchHour = [str(slot) for slot in timeslot_df['SlotID'] if str(slot).endswith(('4', '5'))]
-    class_lunch_time = {}
+    class_lunch_scheduled = {}  # Track if class already has lunch scheduled for the day
 
     # Metrics tracking
     used_rooms = set()
@@ -93,6 +93,24 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     total_attempts = 0
 
     results = []
+
+    # PRIORITY SCHEDULING: Reserve lunch hours first
+    print("\n=== SCHEDULING LUNCH HOURS ===")
+    for class_id in class_df['ClassId']:
+        for day_prefix in ['m', 't', 'w', 'th', 'f']:
+            lunch_slots = [slot for slot in lunchHour if slot.startswith(day_prefix)]
+            if lunch_slots:
+                # Pick one lunch slot for this class on this day
+                lunch_slot = lunch_slots[0]  # You can randomize this if needed
+                
+                # Mark lunch in class schedule
+                class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot] = 'LUNCH'
+                
+                # Track that this class has lunch scheduled for this day
+                class_lunch_scheduled[(class_id, day_prefix)] = lunch_slot
+                
+                results.append(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
+                print(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
 
     for class_id in class_df['ClassId']:
         class_subjects = classSubject_df[classSubject_df['ClassId'] == class_id]['SubjectId']
@@ -147,29 +165,10 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
                     required_slots = timeslot_columns[current_idx:end_idx]
 
-                    # 1. Lunch hour logic
-                    if timeslot in lunchHour and class_id not in class_lunch_time:
-                        prev_slot_idx = timeslot_columns.index(timeslot) - 1
-                        prev_slot = timeslot_columns[prev_slot_idx] if prev_slot_idx >= 0 else None
-
-                        if class_id in class_lunch_time:
-                            if class_lunch_time[class_id] == prev_slot:
-                                pass
-                            elif class_lunch_time[class_id][-1] == "5" and timeslot[-1] == "4":
-                                error_messages.add("Lunch time conflict")
-                                continue
-                            else:
-                                error_messages.add("Lunch time conflict")
-                                continue
-                        else:
-                            if prev_slot and prev_slot[-1] == "3":
-                                class_lunch_time[class_id] = timeslot
-                                error_messages.add("Lunch time assigned")
-                                continue
-                            elif timeslot[-1] in ["4", "5"]:
-                                class_lunch_time[class_id] = timeslot
-                                error_messages.add("Lunch time assigned")
-                                continue
+                    # FIXED LUNCH HOUR LOGIC: Simply skip lunch slots
+                    if any(slot in lunchHour for slot in required_slots):
+                        error_messages.add("Overlaps with lunch hour")
+                        continue
 
                     # 2. Check teacher preferences
                     if assigned_teacher_id in teacher_prefs:
@@ -191,7 +190,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                             error_messages.add("Teacher unavailable (slot preference)")
                             continue
 
-                    # 3. Check class availability
+                    # 3. Check class availability (including lunch check)
                     class_free = all(
                         class_schedule.loc[class_schedule['ClassId'] == class_id, slot].iloc[0] == "free"
                         for slot in required_slots
