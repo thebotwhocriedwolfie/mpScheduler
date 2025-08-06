@@ -221,39 +221,60 @@
         function goToScheduler(){
             window.location.href = "scheduler.html";
         }
-        function run_allocation() {
-            const selectedFile = document.getElementById("fileDropdown").value;
-            const statusDiv = document.getElementById("allocationStatus");
-            
-            statusDiv.innerHTML = "Processing allocation...";
-            console.log("Sending file to backend:", selectedFile);
-            
-            fetch("https://mpscheduler.onrender.com/assign_teachers", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ file_path: selectedFile })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                statusDiv.innerHTML = ` Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
-                console.log("Success:", data);
-                
-                // Clear old assignment display so user knows to refresh
-                document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
-            })
-            .catch(error => {
-                statusDiv.innerHTML = " Assignment failed. Check console for details.";
-                console.error("Error:", error);
-            });
+        
+function run_allocation() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+    const statusDiv = document.getElementById("allocationStatus");
+    
+    statusDiv.innerHTML = "Processing allocation...";
+    console.log("Sending file to backend:", selectedFile);
+    
+    fetch("https://mpscheduler.onrender.com/assign_teachers", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-
+        return response.json();
+    })
+    .then(data => {
+        if (data.success !== false) {  // Check if not explicitly failed
+            let message = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+            
+            // Check if there are any errors/warnings
+            if (data.has_warnings && data.errors && data.errors.length > 0) {
+                message += ` <span style="color: orange;">(⚠️ ${data.error_count} warnings)</span>`;
+                
+                // Show errors in an alert with better formatting
+                const errorList = data.errors.map(error => `• ${error}`).join('\n');
+                alert(`⚠️ Assignment Completed with Warnings\n\n${data.error_count} assignments could not be made:\n\n${errorList}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
+                
+                statusDiv.innerHTML = message;
+            } else {
+                statusDiv.innerHTML = message + " 🎉 All assignments successful!";
+            }
+            
+            console.log("Success:", data);
+        } else {
+            // Handle server-reported failure
+            statusDiv.innerHTML = `❌ Assignment failed: ${data.error || 'Unknown error'}`;
+            alert(`❌ Assignment Failed:\n\n${data.error}`);
+        }
+        
+        // Clear old assignment display so user knows to refresh
+        document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
+    })
+    .catch(error => {
+        statusDiv.innerHTML = "❌ Assignment failed. Check console for details.";
+        console.error("Error:", error);
+        alert(`❌ Network/Server Error:\n\n${error.message}\n\nPlease check your connection and try again.`);
+    });
+}
         function viewAssignments() {
             const selectedFile = document.getElementById("fileDropdown").value;
             const outputDiv = document.getElementById("assignmentOutput");
@@ -367,6 +388,7 @@
     </script>   
 </body>
 </html>
+
 
 
 
