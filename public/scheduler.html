@@ -508,11 +508,35 @@
 
                 // Display only error messages
                 document.getElementById("errorLogOutput").innerText = JSON.stringify(errorMessages, null, 2);
+
+                //error summary logic
+                let summary= new Set();
+
+                errorMessages.forEach(msg=> {
+                    if (msg.includes("No available Teachers")) {
+                summary.add("Not enough teachers available for some subjects. Please allocate more at url");
+                    }
+                    if (msg.includes("No available rooms")) {
+                        summary.add("Room unavailability.");
+                    }
+                });
+                const summaryBox = document.getElementById("errorSummaryContent");
+
+                if (summary.size > 0) {
+                    summaryBox.classList.remove("empty");
+                    summaryBox.innerHTML = Array.from(summary).map(msg => `<p>! ${msg}</p>`).join("");
+                    alert("Scheduling Incomplete\n\n" + Array.from(summary).join("\n"));
+                } else {
+                    summaryBox.classList.add("empty");
+                    summaryBox.innerHTML = "No scheduling issues detected.";
+                }       
             })
+            
             .catch(error => {
                 document.getElementById("logOutput").innerText = "Error: " + error.message;
                 document.getElementById("errorLogOutput").innerText = "Error: " + error.message;
             })
+                
             .finally(() => {
                 // Re-enable button
                 scheduleBtn.disabled = false;
@@ -525,6 +549,7 @@
     </script>
 </body>
 </html>
+
 
 
 
