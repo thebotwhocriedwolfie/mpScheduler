@@ -220,6 +220,7 @@
         })
         .catch(error => {
             console.error("Error:", error);
+            const errorBox = document.getElementById("customErrorBox");
 
             try {
                 const errorData = JSON.parse(error.message);
@@ -254,8 +255,8 @@
                     
                     errorBox.innerHTML = message;
                     errorBox.style.display = "block";
-                }
-                alert(alertMessage);
+
+                    alert(alertMessage);
 
                 } else if (errorData.error === 'SERVER_ERROR') {
                     statusDiv.innerHTML = "Server Error";
@@ -265,8 +266,11 @@
                     statusDiv.innerHTML = `Error: ${errorData.message || errorData.error}`;
                     alert(`Error\n\n${errorData.message || errorData.error}`);
                 }
-
-           
+            } catch (parseError) {
+                // fallback if parsing error.message fails
+                statusDiv.innerHTML = "An unexpected error occurred.";
+                alert("Unexpected error:\n" + error.message);
+            }
         });
     }
 
@@ -381,6 +385,7 @@
 
 </body>
 </html>
+
 
 
 
