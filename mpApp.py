@@ -233,6 +233,30 @@ def upload_file():
         'file_path': f'powerappsCSV/{file.filename}'  # Match dropdown values
     })
 
+#for getting average hours -- get subject details
+@app.route('/get_subject_table', methods=['GET'])
+def get_subject_table():
+    file_path = request.args.get('file_path')
+    if not file_path:
+        return jsonify({'error': 'No file path provided'}), 400
+    
+    try:
+        if file_path.startswith("http"):
+            response = requests.get(file_path)
+            response.raise_for_status()
+            xls = pd.ExcelFile(BytesIO(response.content))
+        else:
+            xls = pd.ExcelFile(file_path)
+        
+        # Read the Subject Table sheet
+        subject_df = pd.read_excel(xls, 'Subject Table')
+        
+        # Convert to JSON
+        return jsonify(subject_df.to_dict('records'))
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
