@@ -156,7 +156,10 @@
             <div id="allocationStatus"></div><br>
             <button class="goToScheduler-btn" onclick="goToScheduler()">Scheduler Page</button>
         </div>
-        
+        <div id="customErrorBox" 
+            style="display:none; border: 1px solid #f44336; background-color: #ffe6e6; color: #b30000; padding: 15px; margin: 20px 0; border-radius: 5px;">
+            </div>
+
         <div class="section">
             <h4>View Teacher Assignments</h4>
             <button onclick="viewAssignments()">View Assignments</button>
@@ -192,18 +195,19 @@
             return response.json();
         })
         .then(data => {
+            //succesful run 
             if (data.success === true) {
-                let message = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+                let message = `Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;//Fully completed allocation
 
                 if (data.has_errors && data.errors && data.errors.length > 0) {
-                    message += ` <span style="color: orange;">(⚠️ ${data.unassigned_count} warnings)</span>`;
+                    message += ` <span style="color: orange;">( ⚠︎ ${data.unassigned_count} warnings)</span>`;//incomplete
 
                     const errorList = data.errors.slice(0, 5).map(error => `• ${error}`).join('\n');
                     const moreErrors = data.errors.length > 5 ? `\n... and ${data.errors.length - 5} more` : '';
 
-                    alert(`✅ Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
+                    alert(`Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
                 } else {
-                    alert("✅ All assignments successful!");
+                    alert("All assignments successful!");
                 }
 
                 statusDiv.innerHTML = message;
@@ -221,46 +225,48 @@
                 const errorData = JSON.parse(error.message);
 
                 if (errorData.error === 'INSUFFICIENT_TEACHERS') {
-                    statusDiv.innerHTML = "❌ Insufficient Teachers Available";
+                    statusDiv.innerHTML = " Insufficient Teachers Available";
                     const details = errorData.details;
-                    let alertMessage = `❌ INSUFFICIENT TEACHERS\n\n${errorData.message}\n\n`;
-
+                    let alertMessage = ` INSUFFICIENT TEACHERS\n\n${errorData.message}\n\n`;
+                    
+                    let message = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
+                    
                     if (details) {
-                        alertMessage += `Summary:\n`;
-                        alertMessage += `• Required assignments: ${details.total_required}\n`;
-                        alertMessage += `• Successfully assigned: ${details.assigned}\n`;
-                        alertMessage += `• Failed assignments: ${details.unassigned || details.total_required - details.assigned}\n\n`;
-
+                        message += `<u>Summary</u><br>`;
+                        message += `- Required assignments: ${details.total_required}<br>`;
+                        message += `- Successfully assigned: ${details.assigned}<br>`;
+                        message += `- Failed assignments: ${details.unassigned || details.total_required - details.assigned}<br><br>`;
+                        
                         if (details.errors && details.errors.length > 0) {
-                            alertMessage += `Examples of failed assignments:\n`;
-                            alertMessage += details.errors.slice(0, 3).map(err => `• ${err}`).join('\n');
+                            message += `<u>Examples of failed assignments</u><br>`;
+                            message += details.errors.slice(0, 3).map(err => `• ${err}`).join('<br>');
                             if (details.errors.length > 3) {
-                                alertMessage += `\n• ... and ${details.errors.length - 3} more`;
+                                message += `<br>• ... and ${details.errors.length - 3} more`;
                             }
+                            message += `<br><br>`;
                         }
                     }
-
-                    alertMessage += `\n\nRecommendations:\n`;
-                    alertMessage += `• Add more qualified teachers\n`;
-                    alertMessage += `• Check teacher subject qualifications\n`;
-                    alertMessage += `• Review teacher workload limits\n`;
-                    alertMessage += `• Consider reducing class-subject requirements`;
-
-                    alert(alertMessage);
+                    message += `<u>Recommendations</u><br>`;
+                    message += `• Add more qualified teachers<br>`;
+                    message += `• Check teacher subject qualifications<br>`;
+                    message += `• Review teacher workload limits<br>`;
+                    message += `• Consider reducing class-subject requirements`;
+                    
+                    errorBox.innerHTML = message;
+                    errorBox.style.display = "block";
+                }
+                alert(alertMessage);
 
                 } else if (errorData.error === 'SERVER_ERROR') {
-                    statusDiv.innerHTML = "❌ Server Error";
-                    alert(`❌ Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
+                    statusDiv.innerHTML = "Server Error";
+                    alert(`Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
 
                 } else {
-                    statusDiv.innerHTML = `❌ Error: ${errorData.message || errorData.error}`;
-                    alert(`❌ Error\n\n${errorData.message || errorData.error}`);
+                    statusDiv.innerHTML = `Error: ${errorData.message || errorData.error}`;
+                    alert(`Error\n\n${errorData.message || errorData.error}`);
                 }
 
-            } catch (parseError) {
-                statusDiv.innerHTML = "❌ Network/Connection Error";
-                alert(`❌ Network Error\n\nUnable to connect to server. Please check:\n• Internet connection\n• Server availability\n• Try again in a moment\n\nTechnical details: ${error.message}`);
-            }
+           
         });
     }
 
@@ -375,6 +381,7 @@
 
 </body>
 </html>
+
 
 
 
