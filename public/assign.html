@@ -165,176 +165,217 @@
     </div>
 
     <script>
-        function goToScheduler(){
-            window.location.href = "scheduler.html";
-        }
-        
-function run_allocation() {
-    const selectedFile = document.getElementById("fileDropdown").value;
-    const statusDiv = document.getElementById("allocationStatus");
-    
-    statusDiv.innerHTML = "Processing allocation...";
-    console.log("Sending file to backend:", selectedFile);
-    
-    fetch("https://mpscheduler.onrender.com/assign_teachers", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ file_path: selectedFile })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Insufficient Teachers !`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success !== false) {  // Check if not explicitly failed
-            let message = ` Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
-            
-            // Check if there are any errors/warnings
-            if (data.has_warnings && data.errors && data.errors.length > 0) {
-                message += ` <span style="color: orange;">(⚠️ ${data.error_count} warnings)</span>`;
-                
-                // Show errors in an alert with better formatting
-                const errorList = data.errors.map(error => `• ${error}`).join('\n');
-                alert(` Assignment Completed with Warnings\n\n${data.error_count} assignments could not be made:\n\n${errorList}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
-                
-                statusDiv.innerHTML = message;
-            } else {
-                statusDiv.innerHTML = message + " All assignments successful!";
+    function goToScheduler() {
+        window.location.href = "scheduler.html";
+    }
+
+    function run_allocation() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+        const statusDiv = document.getElementById("allocationStatus");
+
+        statusDiv.innerHTML = "Processing allocation...";
+        console.log("Sending file to backend:", selectedFile);
+
+        fetch("https://mpscheduler.onrender.com/assign_teachers", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ file_path: selectedFile })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(JSON.stringify(errorData));
+                });
             }
-            
-            console.log("Success:", data);
-        } else {
-            // Handle server-reported failure
-            statusDiv.innerHTML = `❌ Assignment failed: ${data.error || 'Unknown error'}`;
-            alert(`❌ Assignment Failed:\n\n${data.error}`);
-        }
-        
-        // Clear old assignment display so user knows to refresh
-        document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
-    })
-    .catch(error => {
-        statusDiv.innerHTML = "Error : Assignment failed. Check console for details.";
-        console.error("Error:", error);
-        alert(`Error: Network/Server Error:\n\n${error.message}\n\nPlease check your connection and try again.`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.success === true) {
+                let message = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+
+                if (data.has_errors && data.errors && data.errors.length > 0) {
+                    message += ` <span style="color: orange;">(⚠️ ${data.unassigned_count} warnings)</span>`;
+
+                    const errorList = data.errors.slice(0, 5).map(error => `• ${error}`).join('\n');
+                    const moreErrors = data.errors.length > 5 ? `\n... and ${data.errors.length - 5} more` : '';
+
+                    alert(`✅ Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
+                } else {
+                    alert("✅ All assignments successful!");
+                }
+
+                statusDiv.innerHTML = message;
+                console.log("Success:", data);
+            } else {
+                throw new Error(data.message || 'Unknown error occurred');
+            }
+
+            document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
+        })
+        .catch(error => {
+            console.error("Error:", error);
+
+            try {
+                const errorData = JSON.parse(error.message);
+
+                if (errorData.error === 'INSUFFICIENT_TEACHERS') {
+                    statusDiv.innerHTML = "❌ Insufficient Teachers Available";
+                    const details = errorData.details;
+                    let alertMessage = `❌ INSUFFICIENT TEACHERS\n\n${errorData.message}\n\n`;
+
+                    if (details) {
+                        alertMessage += `Summary:\n`;
+                        alertMessage += `• Required assignments: ${details.total_required}\n`;
+                        alertMessage += `• Successfully assigned: ${details.assigned}\n`;
+                        alertMessage += `• Failed assignments: ${details.unassigned || details.total_required - details.assigned}\n\n`;
+
+                        if (details.errors && details.errors.length > 0) {
+                            alertMessage += `Examples of failed assignments:\n`;
+                            alertMessage += details.errors.slice(0, 3).map(err => `• ${err}`).join('\n');
+                            if (details.errors.length > 3) {
+                                alertMessage += `\n• ... and ${details.errors.length - 3} more`;
+                            }
+                        }
+                    }
+
+                    alertMessage += `\n\nRecommendations:\n`;
+                    alertMessage += `• Add more qualified teachers\n`;
+                    alertMessage += `• Check teacher subject qualifications\n`;
+                    alertMessage += `• Review teacher workload limits\n`;
+                    alertMessage += `• Consider reducing class-subject requirements`;
+
+                    alert(alertMessage);
+
+                } else if (errorData.error === 'SERVER_ERROR') {
+                    statusDiv.innerHTML = "❌ Server Error";
+                    alert(`❌ Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
+
+                } else {
+                    statusDiv.innerHTML = `❌ Error: ${errorData.message || errorData.error}`;
+                    alert(`❌ Error\n\n${errorData.message || errorData.error}`);
+                }
+
+            } catch (parseError) {
+                statusDiv.innerHTML = "❌ Network/Connection Error";
+                alert(`❌ Network Error\n\nUnable to connect to server. Please check:\n• Internet connection\n• Server availability\n• Try again in a moment\n\nTechnical details: ${error.message}`);
+            }
+        });
+    }
+
+    function viewAssignments() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+        const outputDiv = document.getElementById("assignmentOutput");
+
+        outputDiv.textContent = "Loading assignments...";
+
+        fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
+            method: "GET"
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                outputDiv.textContent = `Error: ${data.error}`;
+                return;
+            }
+
+            if (data.length === 0) {
+                outputDiv.textContent = "No assignments found. Please run allocation first.";
+                return;
+            }
+
+            const formatted = data.map(row => 
+                `Teacher: ${row.TeacherId} → Class: ${row.ClassId}, Subject: ${row.SubjectId}`
+            ).join('\n');
+
+            outputDiv.textContent = formatted;
+        })
+        .catch(err => {
+            console.error("Error loading assignments:", err);
+            outputDiv.textContent = "Error loading assignments. Check console for details.";
+        });
+    }
+
+    function updateCounts() {
+        const selectedFile = document.getElementById("fileDropdown").value;
+
+        fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            document.getElementById("teacherCount").textContent = data.teacher_count;
+            document.getElementById("classesCount").textContent = data.classes_count;
+        })
+        .catch(error => {
+            console.error("Error fetching counts:", error);
+            document.getElementById("teacherCount").textContent = "Error";
+            document.getElementById("classesCount").textContent = "Error";
+        });
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+        const file = document.getElementById('fileInput').files[0];
+        formData.append('file', file);
+
+        fetch('https://mpscheduler.onrender.com/upload_file', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            alert(data.message);
+            const uploadedFilePath = data.file_path;
+
+            const dropdown = document.getElementById('fileDropdown');
+            const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
+
+            if (!exists) {
+                const newOption = document.createElement("option");
+                newOption.value = uploadedFilePath;
+                newOption.text = uploadedFilePath.split('/').pop();
+                dropdown.appendChild(newOption);
+            }
+
+            dropdown.value = uploadedFilePath;
+            updateCounts();
+        })
+        .catch(error => {
+            console.error('Error uploading file:', error);
+            alert('Error uploading file: ' + error.message);
+        });
     });
-}
-        function viewAssignments() {
-            const selectedFile = document.getElementById("fileDropdown").value;
-            const outputDiv = document.getElementById("assignmentOutput");
-            
-            outputDiv.textContent = "Loading assignments...";
-            
-            fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile), {
-                method: "GET"
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.error) {
-                    outputDiv.textContent = `Error: ${data.error}`;
-                    return;
-                }
-                
-                if (data.length === 0) {
-                    outputDiv.textContent = "No assignments found. Please run allocation first.";
-                    return;
-                }
-                
-                const formatted = data.map(row => 
-                    `Teacher: ${row.TeacherId} → Class: ${row.ClassId}, Subject: ${row.SubjectId}`
-                ).join('\n');
-                outputDiv.textContent = formatted;
-            })
-            .catch(err => {
-                console.error("Error loading assignments:", err);
-                outputDiv.textContent = "Error loading assignments. Check console for details.";
-            });
-        }
 
-        function updateCounts() {
-            const selectedFile = document.getElementById("fileDropdown").value;
-            fetch("https://mpscheduler.onrender.com/counts?file_path=" + encodeURIComponent(selectedFile), {
-                method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                }
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById("teacherCount").textContent = data.teacher_count;
-                document.getElementById("classesCount").textContent = data.classes_count;
-            })
-            .catch(error => {
-                console.error("Error fetching counts:", error);
-                document.getElementById("teacherCount").textContent = "Error";
-                document.getElementById("classesCount").textContent = "Error";
-            });
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCounts();
+    });
+</script>
 
-        // Fixed file upload event listener
-        document.getElementById('uploadForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const formData = new FormData();
-            const file = document.getElementById('fileInput').files[0];
-            formData.append('file', file);
-
-            fetch('https://mpscheduler.onrender.com/upload_file', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json(); 
-            })
-            .then(data => {
-                alert(data.message);
-                const uploadedFilePath = data.file_path; // e.g., "uploads/2025_CUSTOM.xlsx"
-
-                const dropdown = document.getElementById('fileDropdown');
-
-                // Check if file already exists in dropdown
-                const exists = Array.from(dropdown.options).some(opt => opt.value === uploadedFilePath);
-                if (!exists) {
-                    const newOption = document.createElement("option");
-                    newOption.value = uploadedFilePath;
-                    newOption.text = uploadedFilePath.split('/').pop(); // Show just the filename
-                    dropdown.appendChild(newOption);
-                }
-
-                // Select the newly uploaded file
-                dropdown.value = uploadedFilePath;
-
-                // Optionally, update the stats (if needed)
-                updateCounts();
-            })
-            .catch(error => {
-                console.error('Error uploading file:', error);
-                alert('Error uploading file: ' + error.message);
-            });
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            updateCounts(); // Now runs after HTML is fully loaded
-        });
-    </script>   
 </body>
 </html>
+
 
 
 
