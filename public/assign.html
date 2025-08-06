@@ -238,13 +238,13 @@ function run_allocation() {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`Insufficient Teachers !`);
         }
         return response.json();
     })
     .then(data => {
         if (data.success !== false) {  // Check if not explicitly failed
-            let message = `✅ Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
+            let message = ` Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
             
             // Check if there are any errors/warnings
             if (data.has_warnings && data.errors && data.errors.length > 0) {
@@ -252,11 +252,11 @@ function run_allocation() {
                 
                 // Show errors in an alert with better formatting
                 const errorList = data.errors.map(error => `• ${error}`).join('\n');
-                alert(`⚠️ Assignment Completed with Warnings\n\n${data.error_count} assignments could not be made:\n\n${errorList}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
+                alert(` Assignment Completed with Warnings\n\n${data.error_count} assignments could not be made:\n\n${errorList}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
                 
                 statusDiv.innerHTML = message;
             } else {
-                statusDiv.innerHTML = message + " 🎉 All assignments successful!";
+                statusDiv.innerHTML = message + " All assignments successful!";
             }
             
             console.log("Success:", data);
@@ -270,9 +270,9 @@ function run_allocation() {
         document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
     })
     .catch(error => {
-        statusDiv.innerHTML = "❌ Assignment failed. Check console for details.";
+        statusDiv.innerHTML = "Error : Assignment failed. Check console for details.";
         console.error("Error:", error);
-        alert(`❌ Network/Server Error:\n\n${error.message}\n\nPlease check your connection and try again.`);
+        alert(`Error: Network/Server Error:\n\n${error.message}\n\nPlease check your connection and try again.`);
     });
 }
         function viewAssignments() {
@@ -388,6 +388,7 @@ function run_allocation() {
     </script>   
 </body>
 </html>
+
 
 
 
