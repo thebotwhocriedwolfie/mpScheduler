@@ -82,7 +82,9 @@ def run_teacher_assignment(file_path):
                 break
 
         if not assigned:
-            print(f" ERROR: Could not assign Subject {subject_id} for Class {class_id}")
+            error_msg = f" ERROR: Could not assign Subject {subject_id} for Class {class_id}"
+            errors.append(error_msg)  # NEW: Add to errors list
+            print(f" ERROR: {error_msg}")
 
     # Generate output
     output_df = pd.DataFrame(assignments)
