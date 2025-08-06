@@ -2,7 +2,6 @@ import pandas as pd
 import json
 from collections import defaultdict
 
-#function to load data
 def load_data(file_path):
     """Load data from Excel file into DataFrames"""
     xls = pd.ExcelFile(file_path)
@@ -18,25 +17,41 @@ def load_data(file_path):
         'teacherSubject_df': pd.read_excel(xls, 'TeacherSubject Table')
     }
 
-#function to load teacher preferences.json
 def load_teacher_prefs(json_path):
     try:
         with open(json_path) as f:
             prefs = json.load(f)
-            # Convert list to dict if needed
             if isinstance(prefs, list):
                 print("Warning: Converted list preferences to dict")
-                return {pref['TeacherId']: pref for pref in prefs}  # Adjust key as needed
-            return prefs or {}  # Ensure empty dict if file is empty
+                return {pref['TeacherId']: pref for pref in prefs}
+            return prefs or {}
     except Exception as e:
         print(f"Error loading preferences: {e}")
-        return {}  # Always return a dict
+        return {}
 
 def get_day(timeslot):
-    #Supporting function to get day from timeslot
     return timeslot[:1] if not timeslot.startswith('th') else 'th'
 
-# Main function to generate the schedule
+def find_lunch_slot_for_day(class_id, day_prefix, timeslot_columns, class_schedule):
+    """Find the best lunch slot for a class on a given day"""
+    # Preferred lunch slots (middle of the day)
+    preferred_lunch_slots = [f"{day_prefix}4", f"{day_prefix}5"]
+    
+    for lunch_slot in preferred_lunch_slots:
+        if lunch_slot in timeslot_columns:
+            # Check if this slot is free for the class
+            if class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot].iloc[0] == "free":
+                return lunch_slot
+    
+    # If preferred slots are taken, try other middle slots
+    other_slots = [f"{day_prefix}3", f"{day_prefix}6"]
+    for lunch_slot in other_slots:
+        if lunch_slot in timeslot_columns:
+            if class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot].iloc[0] == "free":
+                return lunch_slot
+    
+    return None
+
 def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs=None):
     # Load data
     data = load_data(file_path)
@@ -50,15 +65,14 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     classSubject_df = data['classSubject_df']
     teacherSubject_df = data['teacherSubject_df']
 
-    # Teacher-class-subject allocation
     teacherClassSubject_df = pd.read_csv(assignment_csv)
 
     if teacher_prefs is None:
         teacher_prefs = load_teacher_prefs("preferences.json")
 
-    print("\n=== LOADED TEACHER PREFERENCES ===")  # Debug line
-    print(f"Type: {type(teacher_prefs)}")  # Should be dict
-    print(f"Contents: {teacher_prefs}")  # Show actual data
+    print("\n=== LOADED TEACHER PREFERENCES ===")
+    print(f"Type: {type(teacher_prefs)}")
+    print(f"Contents: {teacher_prefs}")
 
     # Teacher definitions
     teacher_hours = {teacher_id: 0 for teacher_id in teacherSubject_df['TeacherId'].unique()}
@@ -83,8 +97,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     # Tracking dictionaries
     class_subject_room = {}
     daily_subject_hours = defaultdict(int)
-    lunchHour = [str(slot) for slot in timeslot_df['SlotID'] if str(slot).endswith(('4', '5'))]
-    class_lunch_scheduled = {}  # Track if class already has lunch scheduled for the day
+    class_lunch_scheduled = {}  # Track lunch slots for each class-day
 
     # Metrics tracking
     used_rooms = set()
@@ -94,24 +107,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
     results = []
 
-    # PRIORITY SCHEDULING: Reserve lunch hours first
-    print("\n=== SCHEDULING LUNCH HOURS ===")
-    for class_id in class_df['ClassId']:
-        for day_prefix in ['m', 't', 'w', 'th', 'f']:
-            lunch_slots = [slot for slot in lunchHour if slot.startswith(day_prefix)]
-            if lunch_slots:
-                # Pick one lunch slot for this class on this day
-                lunch_slot = lunch_slots[0]  # You can randomize this if needed
-                
-                # Mark lunch in class schedule
-                class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot] = 'LUNCH'
-                
-                # Track that this class has lunch scheduled for this day
-                class_lunch_scheduled[(class_id, day_prefix)] = lunch_slot
-                
-                results.append(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
-                print(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
-
+    # STEP 1: Schedule all subjects first (except lunch)
     for class_id in class_df['ClassId']:
         class_subjects = classSubject_df[classSubject_df['ClassId'] == class_id]['SubjectId']
 
@@ -140,11 +136,11 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
             # Track consecutive failures to prevent infinite loops
             consecutive_failures = 0
-            max_failures = 10  # Prevent infinite loops
+            max_failures = 10
 
             while hours_count < required_hours and consecutive_failures < max_failures:
                 scheduled_this_attempt = False
-                error_messages = set()  # Reset for each scheduling attempt
+                error_messages = set()
 
                 for timeslot in timeslot_columns:
                     current_day = get_day(timeslot)
@@ -165,12 +161,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
                     required_slots = timeslot_columns[current_idx:end_idx]
 
-                    # FIXED LUNCH HOUR LOGIC: Simply skip lunch slots
-                    if any(slot in lunchHour for slot in required_slots):
-                        error_messages.add("Overlaps with lunch hour")
-                        continue
-
-                    # 2. Check teacher preferences
+                    # Check teacher preferences
                     if assigned_teacher_id in teacher_prefs:
                         pref = teacher_prefs[assigned_teacher_id]
 
@@ -190,7 +181,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                             error_messages.add("Teacher unavailable (slot preference)")
                             continue
 
-                    # 3. Check class availability (including lunch check)
+                    # Check class availability
                     class_free = all(
                         class_schedule.loc[class_schedule['ClassId'] == class_id, slot].iloc[0] == "free"
                         for slot in required_slots
@@ -199,7 +190,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                         error_messages.add("Class already scheduled")
                         continue
 
-                    # 4. Check teacher availability
+                    # Check teacher availability
                     teacher_idx = teacher_schedule[teacher_schedule['TeacherId'] == assigned_teacher_id].index[0]
                     teacher_free = all(
                         teacher_schedule.at[teacher_idx, slot] == "free"
@@ -213,7 +204,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                         error_messages.add(f"Teacher {assigned_teacher_id} exceeds max hours")
                         continue
 
-                    # 5. Check room availability
+                    # Check room availability
                     available_rooms = room_df[(room_df[required_slots] == "free").all(axis=1)]
                     if available_rooms.empty:
                         error_messages.add("No available rooms")
@@ -243,10 +234,9 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                     results.append(message)
                     
                     scheduled_this_attempt = True
-                    consecutive_failures = 0  # Reset failure counter
-                    break  # Break out of timeslot loop, continue with while loop
+                    consecutive_failures = 0
+                    break
 
-                # Check if we made progress this round
                 if not scheduled_this_attempt:
                     consecutive_failures += 1
                     if consecutive_failures >= max_failures:
@@ -255,7 +245,20 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                             f"Hours count: {hours_count}/{required_hours}. "
                             f"Reason: {', '.join(error_messages) if error_messages else 'No available slots found'}"
                         )
-                        break  # Exit while loop for this subject
+                        break
+
+    # STEP 2: Now schedule lunch in remaining free slots
+    print("\n=== SCHEDULING LUNCH HOURS ===")
+    for class_id in class_df['ClassId']:
+        for day_prefix in ['m', 't', 'w', 'th', 'f']:
+            lunch_slot = find_lunch_slot_for_day(class_id, day_prefix, timeslot_columns, class_schedule)
+            if lunch_slot:
+                class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot] = 'LUNCH'
+                class_lunch_scheduled[(class_id, day_prefix)] = lunch_slot
+                results.append(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
+                print(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
+            else:
+                results.append(f"Warning: Could not schedule lunch for Class {class_id} on {day_prefix}")
 
     # Final metrics calculation
     total_preference_checks = sum(
