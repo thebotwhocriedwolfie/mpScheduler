@@ -207,7 +207,6 @@ def api_assign_teachers():
 
    
 
-#generate schedule api 
 @app.route('/generate_schedule', methods=['POST'])
 def api_generate_schedule():
     data = request.json
@@ -216,9 +215,8 @@ def api_generate_schedule():
     
     if not file_path:
         return jsonify({'error': 'No file path provided'}), 400
-
     try:
-        #Check if selected file matches the one used for allocations
+        # Check if selected file matches the one used for allocations
         if os.path.exists("SelectedFile.json"):
             with open("SelectedFile.json", "r") as f:
                 selected_file_info = json.load(f)
@@ -236,13 +234,19 @@ def api_generate_schedule():
         
         result = generate_schedule(file_path, assignment_csv, preferences)
         
-        #Print each entry for debug
+        # Print each entry for debug
         for entry in result['schedule']:
             print(entry)
-
-        return jsonify(result)
+            
+        # Make sure to return both schedule and metrics
+        return jsonify({
+            'schedule': result['schedule'],
+            'metrics': result['metrics']  # This is the key addition
+        })
+        
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 #display counts
 @app.route('/counts', methods=['GET'])  # get api route
