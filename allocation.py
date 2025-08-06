@@ -40,6 +40,7 @@ def run_teacher_assignment(file_path):
     teacher_subjects = {tid: set() for tid in teacher_df['TeacherId']}  # Track subjects per teacher
 
     assignments = []
+    errors = []  # FIXED: Initialize errors list
 
     # Sort class-subject pairs by subject first (to group same subjects together)
     sorted_class_subjects = classSubject_df.sort_values(['SubjectId', 'ClassId']).iterrows()
@@ -82,8 +83,8 @@ def run_teacher_assignment(file_path):
                 break
 
         if not assigned:
-            error_msg = f" ERROR: Could not assign Subject {subject_id} for Class {class_id}"
-            errors.append(error_msg)  # NEW: Add to errors list
+            error_msg = f"Could not assign Subject {subject_id} for Class {class_id}"
+            errors.append(error_msg)
             print(f" ERROR: {error_msg}")
 
     # Generate output
@@ -97,4 +98,90 @@ def run_teacher_assignment(file_path):
     if total_teachers > 0:
         print(f"Utilization rate: {used_teachers/total_teachers:.1%}")
     
-    return output_df
+    # FIXED: Return both results and errors
+    return {
+        'assignments_df': output_df,
+        'errors': errors,
+        'stats': {
+            'used_teachers': used_teachers,
+            'total_teachers': total_teachers,
+            'utilization_rate': used_teachers/total_teachers if total_teachers > 0 else 0
+        }
+    }
+
+# FIXED: Updated Flask API endpoint
+@app.route('/assign_teachers', methods=['POST'])
+def api_assign_teachers():
+    data = request.json
+    file_path = data.get('file_path')
+    if not file_path:
+        return jsonify({'error': 'No file path provided'}), 400
+    
+    try:
+        result = run_teacher_assignment(file_path)
+        output_df = result['assignments_df']
+        errors = result['errors']
+        
+        # Save the assignments to CSV
+        output_df.to_csv("Allocations.csv", index=False)
+        
+        # Prepare response data
+        response_data = {
+            'success': True,
+            'assignments_count': len(output_df),
+            'unique_teachers': len(output_df['TeacherId'].unique()) if len(output_df) > 0 else 0,
+            'total_classes_subjects': len(output_df) + len(errors),
+            'unassigned_count': len(errors),
+            'errors': errors,
+            'has_errors': len(errors) > 0
+        }
+        
+        # Save selected file info
+        selected_file_info = {
+            'file_path': file_path,
+            'timestamp': pd.Timestamp.now().isoformat()
+        }
+        with open("SelectedFile.json", "w") as f:
+            json.dump(selected_file_info, f, indent=2)
+        
+        # Check if there are too many errors (insufficient teachers scenario)
+        total_required = response_data['total_classes_subjects']
+        assigned = response_data['assignments_count']
+        
+        if assigned == 0:
+            # No assignments made at all
+            return jsonify({
+                'success': False,
+                'error': 'INSUFFICIENT_TEACHERS',
+                'message': 'No teachers could be assigned to any classes. Please check teacher qualifications and availability.',
+                'details': {
+                    'total_required': total_required,
+                    'assigned': 0,
+                    'errors': errors[:5]  # Show first 5 errors as examples
+                }
+            }), 422  # 422 Unprocessable Entity (not a server error, but a business logic issue)
+        
+        elif len(errors) > assigned:
+            # More failures than successes - likely insufficient teachers
+            return jsonify({
+                'success': False,
+                'error': 'INSUFFICIENT_TEACHERS',
+                'message': f'Only {assigned} out of {total_required} assignments could be made. Insufficient qualified teachers available.',
+                'details': {
+                    'total_required': total_required,
+                    'assigned': assigned,
+                    'unassigned': len(errors),
+                    'errors': errors[:10]  # Show first 10 errors as examples
+                }
+            }), 422
+        
+        else:
+            # Successful with some warnings
+            return jsonify(response_data), 200
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'SERVER_ERROR',
+            'message': f'Server error occurred: {str(e)}'
+        }), 500
