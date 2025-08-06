@@ -172,108 +172,111 @@
         window.location.href = "scheduler.html";
     }
 
-    function run_allocation() {
-        const selectedFile = document.getElementById("fileDropdown").value;
-        const statusDiv = document.getElementById("allocationStatus");
+function run_allocation() {
+    const selectedFile = document.getElementById("fileDropdown").value;
+    const statusDiv = document.getElementById("allocationStatus");
+    const errorBox = document.getElementById("customErrorBox");
 
-        statusDiv.innerHTML = "Processing allocation...";
-        console.log("Sending file to backend:", selectedFile);
+    // Reset status and error box
+    statusDiv.innerHTML = "Processing allocation...";
+    errorBox.style.display = "none";
+    errorBox.innerHTML = "";
 
-        fetch("https://mpscheduler.onrender.com/assign_teachers", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ file_path: selectedFile })
-        })
-        .then(response => {
-            if (!response.ok) {
-                return response.json().then(errorData => {
-                    throw new Error(JSON.stringify(errorData));
-                });
-            }
-            return response.json();
-        })
-        .then(data => {
-            //succesful run 
-            if (data.success === true) {
-                let message = `Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;//Fully completed allocation
+    console.log("Sending file to backend:", selectedFile);
 
-                if (data.has_errors && data.errors && data.errors.length > 0) {
-                    message += ` <span style="color: orange;">( ⚠︎ ${data.unassigned_count} warnings)</span>`;//incomplete
+    fetch("https://mpscheduler.onrender.com/assign_teachers", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ file_path: selectedFile })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(errorData => {
+                throw new Error(JSON.stringify(errorData));
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success === true) {
+            let message = `Assignment complete! ${data.assignments_count} assignments created using ${data.unique_teachers} teachers.`;
 
-                    const errorList = data.errors.slice(0, 5).map(error => `• ${error}`).join('\n');
-                    const moreErrors = data.errors.length > 5 ? `\n... and ${data.errors.length - 5} more` : '';
+            if (data.has_errors && data.errors && data.errors.length > 0) {
+                message += ` <span style="color: orange;">( ⚠︎ ${data.unassigned_count} warnings)</span>`;
 
-                    alert(`Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
-                } else {
-                    alert("All assignments successful!");
-                }
+                const errorList = data.errors.slice(0, 5).map(error => `• ${error}`).join('\n');
+                const moreErrors = data.errors.length > 5 ? `\n... and ${data.errors.length - 5} more` : '';
 
-                statusDiv.innerHTML = message;
-                console.log("Success:", data);
+                alert(`Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
             } else {
-                throw new Error(data.message || 'Unknown error occurred');
+                alert("All assignments successful!");
             }
 
-            document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
-        })
-        .catch(error => {
-            console.error("Error:", error);
-            const errorBox = document.getElementById("customErrorBox");
+            statusDiv.innerHTML = message;
+            console.log("Success:", data);
+        } else {
+            throw new Error(data.message || 'Unknown error occurred');
+        }
 
-            try {
-                const errorData = JSON.parse(error.message);
+        document.getElementById("assignmentOutput").textContent = "Click 'View Assignments' to see the new allocation.";
+    })
+    .catch(error => {
+        console.error("Error:", error);
 
-                if (errorData.error === 'INSUFFICIENT_TEACHERS') {
-                    statusDiv.innerHTML = " Insufficient Teachers Available";
-                    const details = errorData.details;
-                    alert("Allocations Incomplete: Insufficient Teachers");
+        try {
+            const errorData = JSON.parse(error.message);
 
-                    
-                    let message = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
-                    
-                    if (details) {
-                        message += `<u>Summary</u><br>`;
-                        message += `- Required assignments: ${details.total_required}<br>`;
-                        message += `- Successfully assigned: ${details.assigned}<br>`;
-                        message += `- Failed assignments: ${details.unassigned || details.total_required - details.assigned}<br><br>`;
-                        
-                        if (details.errors && details.errors.length > 0) {
-                            message += `<u>Examples of failed assignments</u><br>`;
-                            message += details.errors.slice(0, 3).map(err => `• ${err}`).join('<br>');
-                            if (details.errors.length > 3) {
-                                message += `<br>• ... and ${details.errors.length - 3} more`;
-                            }
-                            message += `<br><br>`;
+            if (errorData.error === 'INSUFFICIENT_TEACHERS') {
+                statusDiv.innerHTML = "Insufficient Teachers Available";
+
+                // Short alert
+                alert("Allocations Incomplete: Insufficient Teachers");
+
+                const details = errorData.details;
+                let message = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
+
+                if (details) {
+                    message += `<u>Summary</u><br>`;
+                    message += `- Required assignments: ${details.total_required}<br>`;
+                    message += `- Successfully assigned: ${details.assigned}<br>`;
+                    message += `- Failed assignments: ${details.unassigned || details.total_required - details.assigned}<br><br>`;
+
+                    if (details.errors && details.errors.length > 0) {
+                        message += `<u>Examples of failed assignments</u><br>`;
+                        message += details.errors.slice(0, 3).map(err => `• ${err}`).join('<br>');
+                        if (details.errors.length > 3) {
+                            message += `<br>• ... and ${details.errors.length - 3} more`;
                         }
+                        message += `<br><br>`;
                     }
-                    message += `<u>Recommendations</u><br>`;
-                    message += `• Add more qualified teachers<br>`;
-                    message += `• Check teacher subject qualifications<br>`;
-                    message += `• Review teacher workload limits<br>`;
-                    message += `• Consider reducing class-subject requirements`;
-                    
-                    errorBox.innerHTML = message;
-                    errorBox.style.display = "block";
-
-                    alert(alertMessage);
-
-                } else if (errorData.error === 'SERVER_ERROR') {
-                    statusDiv.innerHTML = "Server Error";
-                    alert(`Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
-
-                } else {
-                    statusDiv.innerHTML = `Error: ${errorData.message || errorData.error}`;
-                    alert(`Error\n\n${errorData.message || errorData.error}`);
                 }
-            } catch (parseError) {
-                // fallback if parsing error.message fails
-                statusDiv.innerHTML = "An unexpected error occurred.";
-                alert("Unexpected error:\n" + error.message);
+
+                message += `<u>Recommendations</u><br>`;
+                message += `• Add more qualified teachers<br>`;
+                message += `• Check teacher subject qualifications<br>`;
+                message += `• Review teacher workload limits<br>`;
+                message += `• Consider reducing class-subject requirements`;
+
+                errorBox.innerHTML = message;
+                errorBox.style.display = "block";
+            } else if (errorData.error === 'SERVER_ERROR') {
+                statusDiv.innerHTML = "Server Error";
+                alert(`Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
+            } else {
+                statusDiv.innerHTML = `Error: ${errorData.message || errorData.error}`;
+                alert(`Error\n\n${errorData.message || errorData.error}`);
             }
-        });
-    }
+        } catch (parseError) {
+            statusDiv.innerHTML = "An unexpected error occurred.";
+            alert("Unexpected error:\n" + error.message);
+        }
+    });
+}
+
+    
+        
 
     function viewAssignments() {
         const selectedFile = document.getElementById("fileDropdown").value;
@@ -386,6 +389,7 @@
 
 </body>
 </html>
+
 
 
 
