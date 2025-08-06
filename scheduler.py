@@ -32,26 +32,6 @@ def load_teacher_prefs(json_path):
 def get_day(timeslot):
     return timeslot[:1] if not timeslot.startswith('th') else 'th'
 
-def find_lunch_slot_for_day(class_id, day_prefix, timeslot_columns, class_schedule):
-    """Find the best lunch slot for a class on a given day"""
-    # Preferred lunch slots (middle of the day)
-    preferred_lunch_slots = [f"{day_prefix}4", f"{day_prefix}5"]
-    
-    for lunch_slot in preferred_lunch_slots:
-        if lunch_slot in timeslot_columns:
-            # Check if this slot is free for the class
-            if class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot].iloc[0] == "free":
-                return lunch_slot
-    
-    # If preferred slots are taken, try other middle slots
-    other_slots = [f"{day_prefix}3", f"{day_prefix}6"]
-    for lunch_slot in other_slots:
-        if lunch_slot in timeslot_columns:
-            if class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot].iloc[0] == "free":
-                return lunch_slot
-    
-    return None
-
 def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs=None):
     # Load data
     data = load_data(file_path)
@@ -97,7 +77,6 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     # Tracking dictionaries
     class_subject_room = {}
     daily_subject_hours = defaultdict(int)
-    class_lunch_scheduled = {}  # Track lunch slots for each class-day
 
     # Metrics tracking
     used_rooms = set()
@@ -107,7 +86,27 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
     results = []
 
-    # STEP 1: Schedule all subjects first (except lunch)
+    # ✅ PRIORITY LUNCH SCHEDULING: Reserve lunch slots FIRST
+    print("\n=== SCHEDULING LUNCH HOURS ===")
+    for class_id in class_df['ClassId']:
+        for day_prefix in ['m', 't', 'w', 'th', 'f']:
+            # Try slots 4, 5, 3 in order of preference
+            possible_lunch_slots = [f"{day_prefix}4", f"{day_prefix}5", f"{day_prefix}3"]
+            
+            lunch_scheduled = False
+            for lunch_slot in possible_lunch_slots:
+                if lunch_slot in timeslot_columns:
+                    # Reserve this slot for lunch
+                    class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot] = 'LUNCH'
+                    results.append(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
+                    print(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
+                    lunch_scheduled = True
+                    break
+            
+            if not lunch_scheduled:
+                results.append(f"Warning: Could not schedule lunch for Class {class_id} on {day_prefix}")
+
+    # NOW SCHEDULE SUBJECTS (avoiding lunch slots)
     for class_id in class_df['ClassId']:
         class_subjects = classSubject_df[classSubject_df['ClassId'] == class_id]['SubjectId']
 
@@ -134,7 +133,6 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
             assigned_teacher_id = assigned_teacher['TeacherId'].values[0]
 
-            # Track consecutive failures to prevent infinite loops
             consecutive_failures = 0
             max_failures = 10
 
@@ -160,6 +158,12 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                         continue
 
                     required_slots = timeslot_columns[current_idx:end_idx]
+
+                    # ✅ LUNCH CHECK: Skip if any slot conflicts with lunch
+                    class_row = class_schedule[class_schedule['ClassId'] == class_id]
+                    if any(class_row[slot].iloc[0] == 'LUNCH' for slot in required_slots):
+                        error_messages.add("Overlaps with lunch hour")
+                        continue
 
                     # Check teacher preferences
                     if assigned_teacher_id in teacher_prefs:
@@ -247,19 +251,6 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                         )
                         break
 
-    # STEP 2: Now schedule lunch in remaining free slots
-    print("\n=== SCHEDULING LUNCH HOURS ===")
-    for class_id in class_df['ClassId']:
-        for day_prefix in ['m', 't', 'w', 'th', 'f']:
-            lunch_slot = find_lunch_slot_for_day(class_id, day_prefix, timeslot_columns, class_schedule)
-            if lunch_slot:
-                class_schedule.loc[class_schedule['ClassId'] == class_id, lunch_slot] = 'LUNCH'
-                class_lunch_scheduled[(class_id, day_prefix)] = lunch_slot
-                results.append(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
-                print(f"Lunch scheduled: Class {class_id} at {lunch_slot}")
-            else:
-                results.append(f"Warning: Could not schedule lunch for Class {class_id} on {day_prefix}")
-
     # Final metrics calculation
     total_preference_checks = sum(
         1 for _ in teacherClassSubject_df.itertuples() 
@@ -273,12 +264,14 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
     successful_bookings = len([r for r in results if r.startswith("Booked:")])
     failed_bookings = len([r for r in results if r.startswith("Error:")])
+    lunch_bookings = len([r for r in results if r.startswith("Lunch scheduled:")])
 
     print("\n=== SCHEDULING SUMMARY ===")
     print(f"• Rooms Used: {len(used_rooms)}/{total_rooms}")
     print(f"• Teacher Preferences Honored: {preference_score:.1f}%")
     print(f"• Successful Bookings: {successful_bookings}")
     print(f"• Failed Bookings: {failed_bookings}")
+    print(f"• Lunch Hours Scheduled: {lunch_bookings}")
                     
     return {
         'schedule': results,
@@ -286,6 +279,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
             'rooms_utilized': f"{len(used_rooms)}/{total_rooms}",
             'preference_score': f"{preference_score:.1f}%",
             'successful_assignments': successful_bookings,
-            'failed_assignments': failed_bookings
+            'failed_assignments': failed_bookings,
+            'lunch_hours': lunch_bookings
         }
     }
