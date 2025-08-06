@@ -132,33 +132,80 @@ def preference_form():
 @app.route('/assign_teachers', methods=['POST'])
 def api_assign_teachers():
     data = request.json
-    file_path = data.get('file_path')  # Semester file selected from frontend
-
-    if not file_path: #error check
+    file_path = data.get('file_path')
+    if not file_path:
         return jsonify({'error': 'No file path provided'}), 400
-
+    
     try:
-        output_df = run_teacher_assignment(file_path)
-        #overite static allocation csv file
-        output_df.to_csv("Allocations.csv",index=False)
-        #return summary: number of teachers used, total allocations for scoring
-        summary = {
+        result = run_teacher_assignment(file_path)
+        output_df = result['assignments_df']
+        errors = result['errors']
+        
+        # Save the assignments to CSV
+        output_df.to_csv("Allocations.csv", index=False)
+        
+        # Prepare response data
+        response_data = {
+            'success': True,
             'assignments_count': len(output_df),
-            'unique_teachers': len(output_df['TeacherId'].unique())
+            'unique_teachers': len(output_df['TeacherId'].unique()) if len(output_df) > 0 else 0,
+            'total_classes_subjects': len(output_df) + len(errors),
+            'unassigned_count': len(errors),
+            'errors': errors,
+            'has_errors': len(errors) > 0
         }
-
-        #overwrite selected file in assign.html
+        
+        # Save selected file info
         selected_file_info = {
             'file_path': file_path,
             'timestamp': pd.Timestamp.now().isoformat()
         }
         with open("SelectedFile.json", "w") as f:
             json.dump(selected_file_info, f, indent=2)
-
-        # Return summary for scoring later
-        return jsonify(summary)
+        
+        # Check if there are too many errors (insufficient teachers scenario)
+        total_required = response_data['total_classes_subjects']
+        assigned = response_data['assignments_count']
+        
+        if assigned == 0:
+            # No assignments made at all
+            return jsonify({
+                'success': False,
+                'error': 'INSUFFICIENT_TEACHERS',
+                'message': 'No teachers could be assigned to any classes. Please check teacher qualifications and availability.',
+                'details': {
+                    'total_required': total_required,
+                    'assigned': 0,
+                    'errors': errors[:5]  # Show first 5 errors as examples
+                }
+            }), 422  # 422 Unprocessable Entity
+        
+        elif len(errors) > assigned:
+            # More failures than successes - likely insufficient teachers
+            return jsonify({
+                'success': False,
+                'error': 'INSUFFICIENT_TEACHERS',
+                'message': f'Only {assigned} out of {total_required} assignments could be made. Insufficient qualified teachers available.',
+                'details': {
+                    'total_required': total_required,
+                    'assigned': assigned,
+                    'unassigned': len(errors),
+                    'errors': errors[:10]  # Show first 10 errors as examples
+                }
+            }), 422
+        
+        else:
+            # Successful with some warnings
+            return jsonify(response_data), 200
+            
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': 'SERVER_ERROR',
+            'message': f'Server error occurred: {str(e)}'
+        }), 500
+
+   
 
 #generate schedule api 
 @app.route('/generate_schedule', methods=['POST'])
