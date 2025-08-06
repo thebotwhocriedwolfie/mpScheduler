@@ -58,7 +58,7 @@ def save_preferences():
 @app.route('/Allocations.csv')
 def serve_allocations_csv():
     try:
-        return send_from_directory('.', 'Allocations.csv')
+        return send_from_directory('.', 'Allocations.csv') 
     except Exception as e:
         return jsonify({'error': 'Allocations file not found'}), 404
 
@@ -134,12 +134,12 @@ def api_assign_teachers():
     data = request.json
     file_path = data.get('file_path')
     if not file_path:
-        return jsonify({'error': 'No file path provided'}), 400
+        return jsonify({'error': 'No file path provided'}), 400 
     
     try:
-        result = run_teacher_assignment(file_path)
+        result = run_teacher_assignment(file_path) #call function in allocation.py
         output_df = result['assignments_df']
-        errors = result['errors']
+        errors = result['errors'] #get error
         
         # Save the assignments to CSV
         output_df.to_csv("Allocations.csv", index=False)
@@ -178,7 +178,7 @@ def api_assign_teachers():
                     'assigned': 0,
                     'errors': errors[:5]  # Show first 5 errors as examples
                 }
-            }), 422  # 422 Unprocessable Entity
+            }), 422  # 422 Unprocessable data
         
         elif len(errors) > assigned:
             # More failures than successes - likely insufficient teachers
@@ -190,7 +190,7 @@ def api_assign_teachers():
                     'total_required': total_required,
                     'assigned': assigned,
                     'unassigned': len(errors),
-                    'errors': errors[:10]  # Show first 10 errors as examples
+                    'errors': errors[:10]  #Show first 10 errors as examples
                 }
             }), 422
         
