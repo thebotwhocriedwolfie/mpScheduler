@@ -262,6 +262,8 @@ function run_allocation() {
 
                 errorBox.innerHTML = message;
                 errorBox.style.display = "block";
+                errorBox.scrollIntoView({ behavior: 'smooth' });
+
             } else if (errorData.error === 'SERVER_ERROR') {
                 statusDiv.innerHTML = "Server Error";
                 alert(`Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
@@ -390,6 +392,7 @@ function run_allocation() {
 
 </body>
 </html>
+
 
 
 
