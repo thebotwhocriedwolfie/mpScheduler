@@ -584,7 +584,7 @@
             }
         }
 
-        // Load counts for the selected file
+        // Load counts for the selected file (teacher rooms and classes )
         async function loadCounts(filePath) {
             try {
                 const response = await fetch(`https://mpscheduler.onrender.com/counts?file_path=${encodeURIComponent(filePath)}`);
@@ -600,14 +600,14 @@
                 document.getElementById("roomsCount").textContent = "?";
             }
         }
-
+        //run scheduler function
         function runScheduler() {
             if (!selectedFilePath) {
                 alert("No file selected. Please run allocation first.");
                 return;
             }
 
-            // Disable button during processing
+            //disable button during processing
             const scheduleBtn = document.getElementById("scheduleBtn");
             scheduleBtn.disabled = true;
             scheduleBtn.textContent = "Processing...";
@@ -698,5 +698,6 @@
     </script>
 </body>
 </html>
+
 
 
