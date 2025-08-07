@@ -2,6 +2,7 @@ import pandas as pd
 import json
 from collections import defaultdict
 
+# Get dataset info
 def load_data(file_path):
     """Load data from Excel file into DataFrames"""
     xls = pd.ExcelFile(file_path)
@@ -17,6 +18,7 @@ def load_data(file_path):
         'teacherSubject_df': pd.read_excel(xls, 'TeacherSubject Table')
     }
 
+#Get tecaher preference json
 def load_teacher_prefs(json_path):
     try:
         with open(json_path) as f:
@@ -31,7 +33,7 @@ def load_teacher_prefs(json_path):
 
 def get_day(timeslot):
     """Extract day from timeslot - now handles 'r' for Thursday"""
-    return timeslot[:1]  # Simply return first character (m, t, w, r, f)
+    return timeslot[:1]  # return first character (m, t, w, r, f)
 
 def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs=None):
     # Load data
@@ -47,7 +49,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     teacherSubject_df = data['teacherSubject_df']
 
     teacherClassSubject_df = pd.read_csv(assignment_csv)
-
+    #check for any preferences
     if teacher_prefs is None:
         teacher_prefs = load_teacher_prefs("preferences.json")
 
@@ -64,7 +66,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     # Initialize class and teacher schedules
     class_schedule = pd.DataFrame(columns=['ClassId'] + timeslot_columns)
     teacher_schedule = pd.DataFrame(columns=['TeacherId'] + timeslot_columns)
-
+    
     for class_id in class_df['ClassId']:
         row = {'ClassId': class_id}
         row.update({col: 'free' for col in timeslot_columns})
@@ -85,7 +87,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
     preference_violations = 0
     total_attempts = 0
 
-    results = []
+    results = [] #to show at the end
 
     # PRIORITY LUNCH SCHEDULING: Reserve lunch slots firts
     print("\n=== SCHEDULING LUNCH HOURS ===")
@@ -123,7 +125,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
             daily_hours_limit = subject_info['Dailyhours']
             session_duration = daily_hours_limit
             hours_count = 0
-
+            #using assigned teacher from allocation.csv
             assigned_teacher = teacherClassSubject_df[
                 (teacherClassSubject_df['ClassId'] == class_id) &
                 (teacherClassSubject_df['SubjectId'] == subject_id)
@@ -137,7 +139,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
 
             consecutive_failures = 0
             max_failures = 10
-
+            # while loop for checking if subject requiremnets met
             while hours_count < required_hours and consecutive_failures < max_failures:
                 scheduled_this_attempt = False
                 error_messages = set()
@@ -176,9 +178,9 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                             error_messages.add("Teacher unavailable (full day)")
                             continue
 
-                        # Updated preference checking to handle 'r' for Thursday
+                        
                         unavailable_days = [d.lower() for d in pref.get('unavailable_days', [])]
-                        # Map 'thursday' or 'r' to 'r' for consistency
+                        # Map 'thursday' or 'r' to 'r' for consistency -debugging
                         current_day_check = current_day.lower()
                         if current_day_check == 'r':
                             thursday_variants = ['thursday', 'r', 'th']
@@ -240,7 +242,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                     class_subject_room[(class_id, subject_id)] = room_id
                     used_rooms.add(room_id)
                     total_attempts += 1
-
+                    #booking message
                     message = (
                         f"Booked: Class {class_id}, Subject {subject_id} with Teacher {assigned_teacher_id} "
                         f"in Room {room_id} at {timeslot} for {current_session_duration} hours"
@@ -251,7 +253,7 @@ def generate_schedule(file_path, assignment_csv="Allocations.csv", teacher_prefs
                     scheduled_this_attempt = True
                     consecutive_failures = 0
                     break
-
+                #error message
                 if not scheduled_this_attempt:
                     consecutive_failures += 1
                     if consecutive_failures >= max_failures:
