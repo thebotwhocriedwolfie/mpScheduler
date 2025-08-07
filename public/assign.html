@@ -116,6 +116,122 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+
+        /* Enhanced Feedback Box Styling */
+        .feedbackBox {
+            background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+            border: 1px solid #fecaca;
+            border-left: 5px solid #ef4444;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 25px 0;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feedbackBox:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.15);
+        }
+
+        .feedbackBox h4 {
+            color: #dc2626;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feedbackBox h4::before {
+            content: "⚠️";
+            font-size: 20px;
+        }
+
+        .feedbackBox p {
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .feedbackBox ul {
+            color: #4b5563;
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+
+        .feedbackBox li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .feedbackBox li::marker {
+            color: #dc2626;
+        }
+
+        /* Error Message Styling */
+        #error_message {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            color: #b91c1c;
+            font-weight: 500;
+            line-height: 1.6;
+            border-left: 4px solid #dc2626;
+            display: none; /* Initially hidden */
+            animation: slideIn 0.3s ease-out;
+        }
+
+        #error_message.show {
+            display: block;
+        }
+
+        #error_message.success {
+            background: #dcfce7;
+            border-color: #bbf7d0;
+            color: #166534;
+            border-left-color: #22c55e;
+        }
+
+        #error_message.warning {
+            background: #fef3c7;
+            border-color: #fde68a;
+            color: #92400e;
+            border-left-color: #f59e0b;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Error message icons */
+        #error_message::before {
+            margin-right: 8px;
+            font-weight: bold;
+        }
+
+        /* Make the feedback box more responsive */
+        @media (max-width: 768px) {
+            .feedbackBox {
+                margin: 15px 0;
+                padding: 20px;
+            }
+            
+            .feedbackBox h4 {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -136,35 +252,44 @@
                 <div class="count" id="classesCount">0</div>
             </div>
         </div>
-        
+        <!--Controls Section-->
         <div class="section">
             <label for="fileDropdown">Select Dataset</label>
             <select id="fileDropdown" onchange="updateCounts()">
+                <!--default files-->
                 <option value="powerappsCSV/2023_APRIL_SEM.xlsx">2023 APRIL SEM</option>
                 <option value="powerappsCSV/2023_2024_OCT_SEM.xlsx">2023-2024 OCT SEM</option>
                 <option value="powerappsCSV/2025-2026_OCT_SEM.xlsx">2025-2026 OCT SEM</option>
             </select>
-            
+            <!-- Upload section-->
             <h4>Upload Your Own Dataset</h4>
             <form id="uploadForm">
                 <input type="file" id="fileInput" name="file" accept=".xlsx" required />
                 <button type="submit">Upload</button>
             </form>
-
+            
+             <!--Run Allocation Button -->
             <h4>Allocate Teachers To Class</h4>
             <button class="assign-btn" onclick="run_allocation()">Start Allocation</button>
             <div id="allocationStatus"></div><br>
             <button class="goToScheduler-btn" onclick="goToScheduler()">Scheduler Page</button>
         </div>
-        <div id="customErrorBox" 
-            style="display:none; border: 1px solid #f44336; background-color: #ffe6e6; color: #b30000; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <strong>Error Details Will Appear Here</strong>
-        </div>
-
         <div class="section">
             <h4>View Teacher Assignments</h4>
             <button onclick="viewAssignments()">View Assignments</button>
             <pre id="assignmentOutput"></pre>
+        </div>
+        <!-- Enhanced Allocation feedback section-->
+        <div class="feedbackBox">
+            <h4>Unhappy With Allocation Results?</h4>
+            <p>Here is what you can do:</p>
+            <ul>
+                <li>Ensure there are enough qualified teachers for every subject</li>
+                <li>Review Teacher Workloads</li>
+                <li>Consider reducing class-subject hours for F2F lessons</li>
+                <li>Visit ClassSync TP for more information</li>
+            </ul> 
+            <p id="error_message">No recent allocation errors.</p>
         </div>
     </div>
 
@@ -173,15 +298,37 @@
         window.location.href = "scheduler.html";
     }
 
+    function updateErrorMessage(message, type = 'error') {
+        const errorElement = document.getElementById('error_message');
+        
+        // Remove existing classes
+        errorElement.classList.remove('success', 'warning', 'show');
+        
+        // Add appropriate class based on type
+        if (type === 'success') {
+            errorElement.classList.add('success');
+        } else if (type === 'warning') {
+            errorElement.classList.add('warning');
+        }
+        
+        // Update message and show
+        errorElement.textContent = message;
+        errorElement.classList.add('show');
+        
+        // Scroll to feedback box
+        document.querySelector('.feedbackBox').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'nearest' 
+        });
+    }
+
 function run_allocation() {
     const selectedFile = document.getElementById("fileDropdown").value;
     const statusDiv = document.getElementById("allocationStatus");
-    const errorBox = document.getElementById("customErrorBox");
 
-    // Reset status and error box
+    // Reset status and error message
     statusDiv.innerHTML = "Processing allocation...";
-    errorBox.style.display = "none";
-    errorBox.innerHTML = "";
+    updateErrorMessage("Processing allocation...", 'warning');
 
     console.log("Sending file to backend:", selectedFile);
 
@@ -206,12 +353,17 @@ function run_allocation() {
 
             if (data.has_errors && data.errors && data.errors.length > 0) {
                 message += ` <span style="color: orange;">( ⚠︎ ${data.unassigned_count} warnings)</span>`;
+                
+                // Update error message box
+                const errorSummary = `⚠ ${data.unassigned_count} assignments could not be completed. Main issues: insufficient qualified teachers, maximum workload reached, or class limits exceeded.`;
+                updateErrorMessage(errorSummary, 'warning');
 
                 const errorList = data.errors.slice(0, 5).map(error => `• ${error}`).join('\n');
                 const moreErrors = data.errors.length > 5 ? `\n... and ${data.errors.length - 5} more` : '';
 
                 alert(`Assignment Completed with Warnings\n\n${data.unassigned_count} assignments could not be made:\n\n${errorList}${moreErrors}\n\nPossible reasons:\n- No qualified teachers available\n- Teachers at maximum workload (20 hours)\n- Teachers at maximum class limit (3 classes)\n- Teachers already teaching 2 classes of same subject`);
             } else {
+                updateErrorMessage("All assignments completed successfully! No errors detected.", 'success');
                 alert("All assignments successful!");
             }
 
@@ -231,52 +383,51 @@ function run_allocation() {
 
             if (errorData.error === 'INSUFFICIENT_TEACHERS') {
                 statusDiv.innerHTML = "Insufficient Teachers Available";
+                
+                // Update error message box with main error
+                updateErrorMessage("!!INSUFFICIENT TEACHERS !!: Please add more qualified teachers at ClassSync TP website. Current teacher pool cannot handle all class-subject requirements.", 'error');
 
                 const details = errorData.details;
-                let message = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
+                let alertMessage = `<strong>Allocations Incomplete: Insufficient Teachers</strong><br><br>`;
 
                 if (details) {
-                    message += `<u>Summary</u><br>`;
-                    message += `- Required assignments: ${details.total_required}<br>`;
-                    message += `- Successfully assigned: ${details.assigned}<br>`;
-                    message += `- Failed assignments: ${details.unassigned || details.total_required - details.assigned}<br><br>`;
+                    alertMessage += `<u>Summary</u><br>`;
+                    alertMessage += `- Required assignments: ${details.total_required}<br>`;
+                    alertMessage += `- Successfully assigned: ${details.assigned}<br>`;
+                    alertMessage += `- Failed assignments: ${details.unassigned || details.total_required - details.assigned}<br><br>`;
 
                     if (details.errors && details.errors.length > 0) {
-                        message += `<u>Examples of failed assignments</u><br>`;
-                        message += details.errors.slice(0, 3).map(err => `• ${err}`).join('<br>');
+                        alertMessage += `<u>Examples of failed assignments</u><br>`;
+                        alertMessage += details.errors.slice(0, 3).map(err => `• ${err}`).join('<br>');
                         if (details.errors.length > 3) {
-                            message += `<br>• ... and ${details.errors.length - 3} more`;
+                            alertMessage += `<br>• ... and ${details.errors.length - 3} more`;
                         }
-                        message += `<br><br>`;
+                        alertMessage += `<br><br>`;
                     }
                 }
 
-                message += `<u>Recommendations</u><br>`;
-                message += `• Add more qualified teachers<br>`;
-                message += `• Check teacher subject qualifications<br>`;
-                message += `• Review teacher workload limits<br>`;
-                message += `• Consider reducing class-subject requirements`;
-
-                errorBox.innerHTML = message;
-                errorBox.style.display = "block";
-                errorBox.scrollIntoView({ behavior: 'smooth' });
+                alertMessage += `<u>Recommendations</u><br>`;
+                alertMessage += `• Add more qualified teachers<br>`;
+                alertMessage += `• Check teacher subject qualifications<br>`;
+                alertMessage += `• Review teacher workload limits<br>`;
+                alertMessage += `• Consider reducing class-subject requirements`;
 
             } else if (errorData.error === 'SERVER_ERROR') {
                 statusDiv.innerHTML = "Server Error";
+                updateErrorMessage("SERVER ERROR: " + errorData.message + " Please try again or contact support.", 'error');
                 alert(`Server Error\n\n${errorData.message}\n\nPlease try again or contact support if the issue persists.`);
             } else {
                 statusDiv.innerHTML = `Error: ${errorData.message || errorData.error}`;
+                updateErrorMessage("ERROR: " + (errorData.message || errorData.error), 'error');
                 alert(`Error\n\n${errorData.message || errorData.error}`);
             }
         } catch (parseError) {
             statusDiv.innerHTML = "An unexpected error occurred.";
+            updateErrorMessage("UNEXPECTED ERROR: Something went wrong. Please try again or contact support.", 'error');
             alert("Unexpected error:\n" + error.message);
         }
     });
 }
-
-    
-        
 
     function viewAssignments() {
         const selectedFile = document.getElementById("fileDropdown").value;
@@ -389,6 +540,7 @@ function run_allocation() {
 
 </body>
 </html>
+
 
 
 
