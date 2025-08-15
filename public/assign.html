@@ -559,7 +559,7 @@ function run_allocation() {
         });
     }
 
-    // New function for the table view
+    // New function for the table view - Frontend only mapping
     function viewAssignmentTable() {
         const selectedFile = document.getElementById("fileDropdown").value;
         const outputDiv = document.getElementById("assignmentOutput");
@@ -573,39 +573,53 @@ function run_allocation() {
         // Show loading in table
         tableBody.innerHTML = '<tr><td colspan="6"><div class="loading-spinner"></div>Loading assignment data with names...</td></tr>';
 
-        fetch("https://mpscheduler.onrender.com/get_allocations_with_names?file_path=" + encodeURIComponent(selectedFile), {
-            method: "GET"
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                tableBody.innerHTML = `<tr><td colspan="6">Error: ${data.error}</td></tr>`;
+        // Fetch both allocation data and lookup tables
+        Promise.all([
+            // Get allocation logs (existing endpoint)
+            fetch("https://mpscheduler.onrender.com/get_allocations?file_path=" + encodeURIComponent(selectedFile))
+                .then(response => response.json()),
+            // Get lookup tables (need to add this endpoint to your Flask)
+            fetch("https://mpscheduler.onrender.com/get_lookup_tables?file_path=" + encodeURIComponent(selectedFile))
+                .then(response => response.json())
+        ])
+        .then(([allocationsData, lookupData]) => {
+            if (allocationsData.error) {
+                tableBody.innerHTML = `<tr><td colspan="6">Error loading allocations: ${allocationsData.error}</td></tr>`;
                 return;
             }
 
-            if (data.length === 0) {
+            if (lookupData.error) {
+                tableBody.innerHTML = `<tr><td colspan="6">Error loading lookup data: ${lookupData.error}</td></tr>`;
+                return;
+            }
+
+            if (allocationsData.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="6">No assignments found. Please run allocation first.</td></tr>';
                 return;
             }
 
+            // Create lookup dictionaries
+            const teacherLookup = createLookupMap(lookupData.teachers, 'TeacherId', ['TeacherName', 'Name', 'FullName', 'Teacher_Name']);
+            const classLookup = createLookupMap(lookupData.classes, 'ClassId', ['ClassName', 'Name', 'Class_Name', 'ClassCode']);
+            const subjectLookup = createLookupMap(lookupData.subjects, 'SubjectId', ['SubjectName', 'Name', 'Subject_Name', 'SubjectCode']);
+
             // Clear loading message
             tableBody.innerHTML = '';
 
-            // Populate table with data
-            data.forEach(row => {
+            // Map allocations to names and populate table
+            allocationsData.forEach(row => {
+                const teacherId = row.TeacherId || '';
+                const classId = row.ClassId || '';
+                const subjectId = row.SubjectId || '';
+
                 const tableRow = document.createElement('tr');
                 tableRow.innerHTML = `
-                    <td>${row.TeacherId}</td>
-                    <td>${row.TeacherName || 'Unknown'}</td>
-                    <td>${row.ClassId}</td>
-                    <td>${row.ClassName || 'Unknown'}</td>
-                    <td>${row.SubjectId}</td>
-                    <td>${row.SubjectName || 'Unknown'}</td>
+                    <td>${teacherId}</td>
+                    <td>${teacherLookup[teacherId] || 'Unknown'}</td>
+                    <td>${classId}</td>
+                    <td>${classLookup[classId] || 'Unknown'}</td>
+                    <td>${subjectId}</td>
+                    <td>${subjectLookup[subjectId] || 'Unknown'}</td>
                 `;
                 tableBody.appendChild(tableRow);
             });
@@ -614,6 +628,32 @@ function run_allocation() {
             console.error("Error loading assignments with names:", err);
             tableBody.innerHTML = '<tr><td colspan="6">Error loading assignments. Check console for details.</td></tr>';
         });
+    }
+
+    // Helper function to create lookup maps with flexible column names
+    function createLookupMap(data, idColumn, possibleNameColumns) {
+        const lookup = {};
+        
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            return lookup;
+        }
+
+        // Find the name column that exists in the data
+        let nameColumn = null;
+        for (const col of possibleNameColumns) {
+            if (data[0].hasOwnProperty(col)) {
+                nameColumn = col;
+                break;
+            }
+        }
+
+        if (nameColumn && data[0].hasOwnProperty(idColumn)) {
+            data.forEach(row => {
+                lookup[row[idColumn]] = row[nameColumn];
+            });
+        }
+
+        return lookup;
     }
 
     function updateCounts() {
