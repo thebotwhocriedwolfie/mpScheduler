@@ -115,6 +115,88 @@ def get_selected_file():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+#get allocations with names
+@app.route('/get_allocations_with_names', methods=['GET'])
+def get_allocations_with_names():
+    try:
+        file_path = request.args.get('file_path', 'powerappsCSV/2025-2026_OCT_SEM.xlsx')
+        
+        # Check if allocations.csv exists
+        if not os.path.exists('allocations.csv'):
+            return jsonify({"error": "No allocations found. Please run allocation first."}), 404
+        
+        # Read the allocations CSV
+        allocations_df = pd.read_csv('allocations.csv')
+        
+        if allocations_df.empty:
+            return jsonify([])
+        
+        # Load the lookup data from the Excel file
+        data = load_data(file_path)
+        teacher_df = data['teacher_df']
+        class_df = data['class_df'] 
+        subject_df = data['subject_df']
+        
+        # Create lookup dictionaries for mapping IDs to names
+        teacher_lookup = {}
+        if 'TeacherId' in teacher_df.columns:
+            # Try common column names for teacher names
+            name_col = None
+            for col in ['TeacherName', 'Name', 'FullName', 'Teacher_Name']:
+                if col in teacher_df.columns:
+                    name_col = col
+                    break
+            
+            if name_col:
+                teacher_lookup = dict(zip(teacher_df['TeacherId'], teacher_df[name_col]))
+        
+        class_lookup = {}
+        if 'ClassId' in class_df.columns:
+            # Try common column names for class names
+            name_col = None
+            for col in ['ClassName', 'Name', 'Class_Name', 'ClassCode']:
+                if col in class_df.columns:
+                    name_col = col
+                    break
+            
+            if name_col:
+                class_lookup = dict(zip(class_df['ClassId'], class_df[name_col]))
+        
+        subject_lookup = {}
+        if 'SubjectId' in subject_df.columns:
+            # Try common column names for subject names
+            name_col = None
+            for col in ['SubjectName', 'Name', 'Subject_Name', 'SubjectCode']:
+                if col in subject_df.columns:
+                    name_col = col
+                    break
+            
+            if name_col:
+                subject_lookup = dict(zip(subject_df['SubjectId'], subject_df[name_col]))
+        
+        # Map the allocations to include names
+        result = []
+        for _, row in allocations_df.iterrows():
+            teacher_id = row.get('TeacherId', '')
+            class_id = row.get('ClassId', '')
+            subject_id = row.get('SubjectId', '')
+            
+            mapped_row = {
+                'TeacherId': teacher_id,
+                'TeacherName': teacher_lookup.get(teacher_id, 'Unknown'),
+                'ClassId': class_id,
+                'ClassName': class_lookup.get(class_id, 'Unknown'),
+                'SubjectId': subject_id,
+                'SubjectName': subject_lookup.get(subject_id, 'Unknown')
+            }
+            result.append(mapped_row)
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error in get_allocations_with_names: {e}")
+        return jsonify({"error": f"Failed to load allocations with names: {str(e)}"}), 500
+
 #HTML Routes
 @app.route('/scheduler.html') #scheduler page route
 def serve_scheduler():
